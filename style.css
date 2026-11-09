@@ -458,7 +458,7 @@ aside::-webkit-scrollbar-thumb {
 /* Progress Bars */
 .bar {
   height: 9px;
-  background: rgba(50, 27, 38, 0.85);
+  background: rgba(23, 36, 56, 0.85);
   border-radius: 10px;
   overflow: hidden;
   margin: 9px 0;
@@ -537,7 +537,7 @@ input, select, textarea {
   padding: 10px 13px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: rgba(25, 13, 19, 0.75);
+  background: rgba(7, 13, 24, 0.75);
   color: var(--ink);
   font: inherit;
   transition: all 0.2s ease;
@@ -547,7 +547,7 @@ input:focus, select:focus, textarea:focus {
   outline: 0;
   border-color: var(--gold);
   box-shadow: 0 0 0 3px rgba(245, 185, 66, 0.22);
-  background: rgba(38, 20, 29, 0.95);
+  background: rgba(13, 23, 38, 0.95);
 }
 
 .fg {
@@ -560,7 +560,7 @@ input:focus, select:focus, textarea:focus {
 #ov {
   position: fixed;
   inset: 0;
-  background: rgba(15, 7, 12, 0.85);
+  background: rgba(7, 13, 24, 0.85);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: none;
@@ -800,7 +800,7 @@ summary {
   align-items: center;
   gap: 14px;
   padding: 0 clamp(16px, 3.5vw, 40px);
-  background: rgba(25, 13, 19, 0.88);
+  background: rgba(7, 13, 24, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
@@ -872,7 +872,7 @@ aside .lg, aside .tg {
     left: 0;
     right: 0;
     flex-direction: column;
-    background: rgba(25, 13, 19, 0.98);
+    background: rgba(7, 13, 24, 0.98);
     backdrop-filter: blur(20px);
     padding: 12px;
     border-bottom: 1px solid var(--line);
@@ -940,7 +940,7 @@ aside .lg, aside .tg {
   margin: -36px 16px 0;
   position: relative;
   z-index: 2;
-  background: rgba(38, 20, 29, 0.95);
+  background: rgba(13, 23, 38, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(245, 185, 66, 0.28);
@@ -955,7 +955,7 @@ aside .lg, aside .tg {
 }
 
 .dk .mut { color: var(--mut); }
-.dk .bar { background: rgba(50, 27, 38, 0.7); }
+.dk .bar { background: rgba(23, 36, 56, 0.7); }
 
 /* AI Assistant Banner */
 .aib {
@@ -985,7 +985,7 @@ aside .lg, aside .tg {
   position: absolute;
   right: 12px;
   top: 12px;
-  background: rgba(25, 13, 19, 0.75);
+  background: rgba(7, 13, 24, 0.75);
   border: 1px solid rgba(245, 185, 66, 0.25);
   color: #fff;
   border-radius: 50%;
@@ -1082,7 +1082,7 @@ aside .lg, aside .tg {
 }
 
 .cdn div {
-  background: rgba(50, 27, 38, 0.65);
+  background: rgba(23, 36, 56, 0.65);
   border: 1px solid rgba(245, 185, 66, 0.22);
   border-radius: 18px;
   padding: 16px 6px;
@@ -1195,7 +1195,7 @@ aside .lg, aside .tg {
 .gl {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  background: rgba(38, 20, 29, 0.82);
+  background: rgba(13, 23, 38, 0.82);
 }
 
 .skl {
@@ -1237,7 +1237,7 @@ aside .lg, aside .tg {
   position: absolute;
   inset: auto 0 0;
   padding: 24px;
-  background: linear-gradient(transparent, rgba(15, 7, 12, 0.95));
+  background: linear-gradient(transparent, rgba(7, 13, 24, 0.95));
 }
 
 .dtt h2 {
@@ -1277,7 +1277,7 @@ aside .lg, aside .tg {
   inset: auto 0 0;
   padding: 10px;
   font-size: 11.5px;
-  background: linear-gradient(transparent, rgba(15, 7, 12, 0.9));
+  background: linear-gradient(transparent, rgba(7, 13, 24, 0.9));
   opacity: 0;
   transition: opacity 0.3s ease;
   color: #fff;
@@ -1309,7 +1309,7 @@ aside .lg, aside .tg {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(15, 7, 12, 0.95);
+  background: rgba(7, 13, 24, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: none;
