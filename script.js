@@ -25,12 +25,78 @@ $('#pg').innerHTML=D.trips.length||V.p=='set'?P[V.p]():`<div class="card" style=
 const tcard=t=>{const x=tt(t);return`<div class="card h" onclick="go('plan',${t.id})"><div class="row"><b>${E(t.name)}</b><span class="pill" style="background:var(--teal)">${E(t.mode)}</span></div><div class="mut">${E(t.from)} → ${E(t.to)} · ${fd(t.dep)}–${fd(t.ret)}</div><div class="bar"><i class="${x>t.budget?'o':''}" style="width:${Math.min(100,x/t.budget*100)}%"></i></div><div class="row mut"><span>${M(x,t.cur)} spent</span><span>of ${M(t.budget,t.cur)}</span></div></div>`};
 const stat=(i,v,l)=>`<div class="card st"><div class="ib">${ic(i)}</div><div><b>${v}</b><span>${l}</span></div></div>`;
 const P={
-dash(){const T=D.trips,tb=T.reduce((a,t)=>a+t.budget,0),te=sum(D.exp),up=T.filter(t=>t.ret>=today).sort((a,b)=>a.dep>b.dep?1:-1),re=[...D.exp].sort((a,b)=>a.date<b.date?1:-1).slice(0,5),mx=Math.max(1,...T.map(t=>Math.max(t.budget,tt(t))));
-return`<div class="hero"><div><h2>Welcome back, ${E(D.user)}! 👋</h2><p>Every Journey, Within Your Budget.</p><button class="btn o" onclick="wiz()">${ic('compass')}Plan a New Journey</button></div><svg width="96" height="96" viewBox="0 0 40 40"><rect x="9" y="12" width="22" height="24" rx="6" fill="#fffdf8" opacity=".95"/><rect x="12" y="6" width="16" height="6" rx="2" fill="#f97316"/><path d="M20 30s-6-5.2-6-9.6a6 6 0 0112 0C26 24.800 20 30 20 30z" fill="#0d9488"/></svg></div>
-<div class="grid a4">${stat('map-pinned',T.length,'Total trips')}${stat('piggy-bank',M(tb),'Total budget planned')}${stat('receipt',M(te),'Total expenses')}${stat('calculator',M(te/Math.max(1,T.length)),'Average cost per trip')}</div>
-<div class="grid a2"><div class="card"><h3>Upcoming trips</h3>${up.slice(0,3).map(tcard).join('<div style="height:10px"></div>')||'<span class="mut">None yet.</span>'}</div><div class="card"><h3>Recent expenses</h3>${re.map(e=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span><b>${E(e.name)}</b><br><span class="mut">${e.cat} · ${fd(e.date)}</span></span><b>${M(e.amt)}</b></div>`).join('')}</div></div>
-<div class="card" style="margin-top:14px"><h3>Budget overview</h3>${T.map(t=>`<div class="mut">${E(t.name)} · ${M(tt(t),t.cur)} / ${M(t.budget,t.cur)}</div><div class="bar" style="background:var(--sk)"><i class="${tt(t)>t.budget?'o':''}" style="width:${tt(t)/mx*100}%"></i></div>`).join('')}</div>
-<h3 style="margin-top:22px">Popular destinations</h3><div class="grid a3" style="margin-top:0">${DEST.map(d=>`<div class="dest" style="background:linear-gradient(135deg,${d[2]})" onclick="wiz('${d[0]}')"><em>${d[1]}</em><b style="font-size:17px">${d[0]}</b><small>~${M(d[3])} / person / day</small></div>`).join('')}</div>`},
+dash(){const T=D.trips,tb=T.reduce((a,t)=>a+t.budget,0),te=sum(D.exp),up=T.filter(t=>t.ret>=today).sort((a,b)=>a.dep>b.dep?1:-1),re=[...D.exp].sort((a,b)=>a.date<b.date?1:-1).slice(0,5),mx=Math.max(1,...T.map(t=>Math.max(t.budget,tt(t)))),next=up[0],saved=(D.wish||D.fav||[]).length;
+const imgs={Manali:'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80',Goa:'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80',Jaipur:'https://images.unsplash.com/photo-1477586517458-8e0828d4f6d0?w=800&q=80',Kashmir:'https://images.unsplash.com/photo-1566837497312-7be4c9dae936?w=800&q=80',Bali:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',Dubai:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80',default:'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80'};
+const pickImg=n=>{const k=Object.keys(imgs).find(x=>(n||'').toLowerCase().includes(x.toLowerCase()));return imgs[k]||imgs.default};
+const daysLeft=t=>{const d=Math.ceil((new Date(t.dep)-new Date(today))/864e5);return d>0?d+' days left':d===0?'Starts today':'In progress'};
+return`<div class="dash-hero">
+  <div class="dash-welcome">
+    <div>
+      <div class="bd">DASHBOARD</div>
+      <h2>Welcome back${D.user?', '+E(D.user.split(' ')[0]):''}</h2>
+      <p>Let's plan your next adventure — track trips, budgets and memories in one place.</p>
+      <div class="row" style="justify-content:flex-start;gap:10px;margin-top:14px">
+        <button class="btn" onclick="wiz()">${ic('plus')}Create New Trip</button>
+        <button class="btn g" onclick="V.p='disc';R()">${ic('compass')}Discover</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid a4 dash-stats">
+  ${stat('map-pinned',T.length,'Planned trips')}
+  ${stat('wallet',M(tb),'Total budget')}
+  ${stat('receipt',M(te),'Total spent')}
+  ${stat('heart',saved,'Saved places')}
+</div>
+
+${next?`<div class="dash-upcoming">
+  <div class="dash-up-img"><img src="${pickImg(next.to||next.name)}" alt="" loading="lazy"><div class="dash-up-overlay"></div>
+    <div class="dash-up-badge">${ic('calendar')} ${daysLeft(next)}</div>
+  </div>
+  <div class="dash-up-body">
+    <span class="mut">Upcoming journey</span>
+    <h3>${E(next.name)}</h3>
+    <div class="mut" style="margin:6px 0 12px">${E(next.from||'—')} → ${E(next.to||next.name)} · ${fd(next.dep)} – ${fd(next.ret)} · ${next.trav||1} traveller(s)</div>
+    <div class="row" style="gap:16px;margin-bottom:14px">
+      <div><span class="mut">Budget</span><div class="big" style="font-size:20px;color:var(--gold)">${M(next.budget,next.cur)}</div></div>
+      <div><span class="mut">Spent</span><div class="big" style="font-size:20px">${M(tt(next),next.cur)}</div></div>
+      <div><span class="mut">Left</span><div class="big" style="font-size:20px;color:var(--emerald)">${M(Math.max(0,next.budget-tt(next)),next.cur)}</div></div>
+    </div>
+    <div class="bar" style="height:8px;margin-bottom:14px"><i class="${tt(next)>next.budget?'o':''}" style="width:${Math.min(100,pct(next))}%"></i></div>
+    <div class="row" style="justify-content:flex-start;gap:8px">
+      <button class="btn" onclick="go('smart',${next.id})">${ic('eye')}View Trip</button>
+      <button class="btn g" onclick="go('plan',${next.id})">${ic('pencil')}Edit Plan</button>
+      <button class="btn g" onclick="go('iti',${next.id})">${ic('calendar-days')}Itinerary</button>
+    </div>
+  </div>
+</div>`:`<div class="card" style="text-align:center;padding:32px"><div style="font-size:40px;margin-bottom:8px">🧳</div><h3 style="margin:0 0 8px">No upcoming trips</h3><p class="mut" style="margin:0 0 16px">Create your first journey and track every rupee.</p><button class="btn" onclick="wiz()">${ic('plus')}Plan a New Journey</button></div>`}
+
+<div class="grid a2" style="margin-top:18px">
+  <div class="card">
+    <div class="row" style="margin-bottom:12px"><h3 style="margin:0">Your trips</h3><button class="btn s g" onclick="V.p='trips';R()">See all</button></div>
+    ${up.slice(0,3).map(t=>`<div class="dash-trip-row" onclick="go('smart',${t.id})">
+      <div class="dash-trip-thumb"><img src="${pickImg(t.to||t.name)}" alt=""></div>
+      <div style="flex:1;min-width:0"><b>${E(t.name)}</b><div class="mut">${fd(t.dep)} · ${dys(t)} days · ${M(t.budget,t.cur)}</div></div>
+      <span class="pill" style="background:rgba(245,185,66,.15);color:var(--gold)">${Math.round(pct(t))}%</span>
+    </div>`).join('')||'<span class="mut">No trips yet.</span>'}
+  </div>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px"><h3 style="margin:0">Recent expenses</h3><button class="btn s g" onclick="V.p='exp';R()">Tracker</button></div>
+    ${re.length?re.map(e=>`<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span><b>${E(e.name)}</b><br><span class="mut">${E(e.cat)} · ${fd(e.date)}</span></span><b style="color:var(--gold)">${M(e.amt)}</b></div>`).join(''):'<span class="mut">No expenses logged yet.</span>'}
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <h3 style="margin-top:0">Budget overview</h3>
+  ${T.length?T.map(t=>`<div style="margin-bottom:12px"><div class="row mut"><span>${E(t.name)}</span><span>${M(tt(t),t.cur)} / ${M(t.budget,t.cur)}</span></div><div class="bar"><i class="${tt(t)>t.budget?'o':''}" style="width:${Math.min(100,tt(t)/Math.max(1,t.budget)*100)}%"></i></div></div>`).join(''):'<span class="mut">Add a trip to see budget progress.</span>'}
+</div>
+
+<div class="sec-title" style="margin-top:28px">Quick destinations</div>
+<p class="sec-sub">Tap to start planning</p>
+<div class="dest-grid" style="margin-top:0">
+${[['Manali','India','₹8,500','https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=600&q=80'],['Goa','India','₹9,500','https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=600&q=80'],['Jaipur','India','₹6,500','https://images.unsplash.com/photo-1477586517458-8e0828d4f6d0?w=600&q=80'],['Bali','Indonesia','₹28,000','https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80']].map(([n,c,pr,img])=>`<div class="dest-card" onclick="wiz('${n}')"><div class="img"><img src="${img}" alt="${n}" loading="lazy"></div><div class="body"><h4>${n}</h4><div class="meta">${c}</div><div class="price">from ${pr}</div></div></div>`).join('')}
+</div>`},
 home(){return homePg()},
 count(){return countPg()},disc(){return discPg()},pack(){return packPg()},vault(){return vaultPg()},
 smart(){return smartPg()},
