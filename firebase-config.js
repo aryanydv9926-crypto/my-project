@@ -13,12 +13,16 @@ export const firebaseConfig = {
   measurementId: "G-ZMZL8F03HC"
 };
 
-// Optional: URLs of YOUR deployed proxy (see backend/api-proxy-worker.js), no trailing slash.
-// Leave empty until you deploy it. Example:
-//   tmdbProxy:    "https://journeyjar-proxy.YOUR-NAME.workers.dev/tmdb"
-//   youtubeProxy: "https://journeyjar-proxy.YOUR-NAME.workers.dev/youtube"
+// ============================================================
+//  >>> PASTE YOUR DEPLOYED BACKEND PROXY ADDRESS HERE <<<
+//  After `firebase deploy --only functions` the terminal prints the function URL, for example
+//    https://us-central1-journeyjar-b7f0b.cloudfunctions.net/api
+//  Put that address plus "/tmdb" between the quotes below (no trailing slash):
+//    tmdbProxy: "https://us-central1-journeyjar-b7f0b.cloudfunctions.net/api/tmdb"
+//  The TMDB API key is NEVER put here. It lives only in the Cloud Functions secret TMDB_API_KEY.
+// ============================================================
 export const DISCOVER_CONFIG = {
   tmdbProxy: "",
-  youtubeProxy: "",
-  tmdbImg: "https://image.tmdb.org/t/p/w342"
+  tmdbImg: "https://image.tmdb.org/t/p/w342",
+  offlineGuide: false   // false = never show built-in sample content; only live data is used
 };

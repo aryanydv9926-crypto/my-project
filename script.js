@@ -1,4 +1,4 @@
-window.DISCOVER_CONFIG=window.DISCOVER_CONFIG||{tmdbProxy:'',youtubeProxy:'',tmdbImg:'https://image.tmdb.org/t/p/w342'};
+window.DISCOVER_CONFIG=window.DISCOVER_CONFIG||{tmdbProxy:'',tmdbImg:'https://image.tmdb.org/t/p/w342',offlineGuide:false};
 let U=null,DB=null,AU=null,unsub=null,AM=0,LOCK=true,ptm;
 const K='journeyjar.v1',$=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),rid=()=>Math.random().toString(36).slice(2,9);
 const SY={INR:'₹',USD:'$',EUR:'€',GBP:'£',AED:'AED ',JPY:'¥'},iso=d=>d.toISOString().slice(0,10),off=n=>iso(new Date(Date.now()+n*864e5)),today=off(0);
@@ -119,11 +119,113 @@ function pdf(){const t=cur();if(!t)return toast('Create a trip first');const a=A
 $('#pr').innerHTML=`<h1>JourneyJar Trip Report</h1><h2>${E(t.name)}</h2><p>${E(t.from)} to ${E(t.to)} · ${t.dep} to ${t.ret} · ${t.trav} traveller(s) · ${E(t.style)}</p><p>Budget ${M(t.budget,t.cur)} · Spent ${M(x,t.cur)} (${pct(t).toFixed(1)}%) · Remaining ${M(t.budget-x,t.cur)} · Per person ${M(x/t.trav,t.cur)}</p><table border='1' cellpadding='5' style='border-collapse:collapse;width:100%'><tr><th>Category</th><th>Allocation</th><th>Planned</th><th>Spent</th></tr>${CK.map(k=>`<tr><td>${k}</td><td>${a[k]}%</td><td>${M(plan$(t,k),t.cur)}</td><td>${M(spent(t,k),t.cur)}</td></tr>`).join('')}</table><h3>Expenses</h3><table border='1' cellpadding='5' style='border-collapse:collapse;width:100%'>${ex(t.id).sort((p,q)=>p.date>q.date?1:-1).map(e=>`<tr><td>${e.date}</td><td>${e.cat}</td><td>${E(e.name)}</td><td>${M(e.amt,t.cur)}</td></tr>`).join('')}</table><h3>Itinerary</h3>${it.map(i=>`<div>Day ${i.day} ${i.time}: ${E(i.title)}</div>`).join('')||'<div>No itinerary items.</div>'}<h3>Alerts</h3>${alerts(t).map(z=>`<div>${E(z[1])}</div>`).join('')}`;
 toast('Choose "Save as PDF" in the print dialog');try{window.print()}catch(e){toast('Printing is blocked here')}}
 async function weather(){const t=cur();if(!t)return toast('Create a trip first');modal(`<h3>Weather for ${E(t.to)}</h3><div id='wx' class='mut'><span class='sp'></span> Loading…</div><button class='btn g' style='margin-top:12px' onclick='cl()'>Close</button>`);
-try{const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(t.to))).json();if(!g.results)throw 0;const r=g.results[0],w=(await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${r.latitude}&longitude=${r.longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`)).json()).daily,tips=[];
+try{const city=(t.to||'').split(',')[0].trim();const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(city))).json();if(!g.results||!g.results.length)throw 0;const r=g.results[0],w=(await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${r.latitude}&longitude=${r.longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`)).json()).daily,tips=[];
 if(Math.max(...w.precipitation_probability_max)>=50)tips.push('Rain is likely: pack an umbrella or raincoat.');if(Math.max(...w.temperature_2m_max)>=32)tips.push('Hot days: carry water and sunscreen.');if(Math.min(...w.temperature_2m_min)<=12)tips.push('Cool nights: pack warm layers.');if(!tips.length)tips.push('Mild weather: light, comfortable clothing is fine.');
 $('#wx').innerHTML=`<div class='tw'><table style='min-width:340px'><tr><th>Day</th><th>High</th><th>Low</th><th>Rain</th></tr>${w.time.map((d,i)=>`<tr><td>${fd(d)}</td><td>${Math.round(w.temperature_2m_max[i])}°C</td><td>${Math.round(w.temperature_2m_min[i])}°C</td><td>${w.precipitation_probability_max[i]??'-'}%</td></tr>`).join('')}</table></div>${tips.map(z=>`<div class='tl'>${z}</div>`).join('')}`}catch(e){$('#wx').innerHTML='Could not load the forecast. This feature needs internet access to the free Open-Meteo service and the destination name to be recognised.'}}
-function ai(){const t=cur();modal(`<h3>${ic('message-circle')} Ask Anything</h3>${D.aiUrl?'':`<div class='err'>The AI service is not connected. JourneyJar has no built-in AI, so add the URL of your own AI endpoint below. It receives a POST with JSON {question, trip} and must return JSON {answer}.</div>`}<label>AI endpoint URL</label><input id='ai_u' value='${E(D.aiUrl||'')}' placeholder='https://your-server.example/ask'><button class='btn g s' style='margin-top:8px' onclick='D.aiUrl=$("#ai_u").value.trim();sv();ai()'>Save endpoint</button><label>Your question</label><textarea id='ai_q' rows='3' placeholder='e.g. How can I save money on a Goa trip?'></textarea><div id='ai_a' class='mut' style='margin:10px 0'></div><div class='row'><button class='btn g' onclick='cl()'>Close</button><button class='btn' onclick='askAI()'>Send</button></div>`)}
-async function askAI(){const q=$('#ai_q').value.trim(),o=$('#ai_a');if(!D.aiUrl){o.innerHTML=`<div class='err'>Connect an AI endpoint first.</div>`;return}if(!q){o.textContent='Type a question first.';return}o.innerHTML='<span class="sp"></span> Thinking…';const t=cur();try{const r=await fetch(D.aiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,trip:t?{name:t.name,to:t.to,budget:t.budget,spent:tt(t),days:dys(t),travellers:t.trav}:null})});if(!r.ok)throw 0;const j=await r.json();o.textContent=j.answer||'The service returned no answer.'}catch(e){o.innerHTML=`<div class='err'>Could not reach the AI service. Check the endpoint URL and that it allows requests from this site.</div>`}}
+function generateTravelAdvice(q, t){
+  const k = String(q||'').toLowerCase();
+  const dest = t ? t.to : 'your destination';
+  const bud = t ? M(t.budget, t.cur) : 'budget';
+  const spentAmt = t ? M(tt(t), t.cur) : '0';
+  const left = t ? M(Math.max(0, t.budget - tt(t)), t.cur) : '0';
+  const days = t ? dys(t) : 4;
+  const tr = t ? t.trav : 2;
+
+  if(/save|money|budget|cost|cheap|reduce|cut|expense/.test(k)){
+    return `<h3>💰 Smart Budget Tips for ${E(dest)}</h3>
+    <p>For your planned budget of <b>${bud}</b> (Remaining: <b>${left}</b> for ${tr} traveler(s)):</p>
+    <ul>
+      <li><b>Transportation:</b> Book trains or overnight buses instead of last-minute flights; rent a scooter/bike locally instead of individual cabs.</li>
+      <li><b>Food & Drinks:</b> Savor local dhabas, street food hubs, and popular thali joints rather than hotel dining or beach shacks.</li>
+      <li><b>Stay:</b> Consider verified homestays or hostels where breakfast is included; look for stays slightly away from the main tourist strip.</li>
+      <li><b>Activities:</b> Combine free walking tours, nature treks, and public beaches; negotiate group activity packages.</li>
+      <li><b>Emergency Buffer:</b> Keep at least 10% (${t ? M(t.budget*0.1, t.cur) : '10%'}) untouched as your safety reserve.</li>
+    </ul>`;
+  }
+  if(/pack|luggage|bag|clothes|wear|carry|bring/.test(k)){
+    return `<h3>🎒 Packing Essentials for ${E(dest)} (${days} Days)</h3>
+    <ul>
+      <li><b>Apparel:</b> 3–4 versatile quick-dry outfits, comfortable walking shoes, light warm layer for cool evenings, and sunglasses/cap.</li>
+      <li><b>Gadgets:</b> 10,000+ mAh power bank, universal adapter, earphones, and offline map downloads (Google Maps / Maps.me).</li>
+      <li><b>Health Kit:</b> Personal prescription meds, antacids/ORS, paracetamol, band-aids, and mosquito repellent.</li>
+      <li><b>Documents:</b> Original government ID card, digital copies saved in your JourneyJar <b>Travel Vault</b>, and some emergency cash.</li>
+    </ul>`;
+  }
+  if(/food|eat|dish|cuisine|restaurant|drink|cafe/.test(k)){
+    let del = 'local street food, fresh seasonal fruits, traditional thalis, and regional tea';
+    const d = dest.toLowerCase();
+    if(/goa/.test(d)) del = 'Goan Fish Curry Rice, Bebinca, Poi bread, Chicken Xacuti, Kingfish Rawa Fry, and Kokum juice';
+    else if(/manali|himachal/.test(d)) del = 'Steaming Siddu with ghee, hot Thukpa, Trout fish fry, Chana Madra, and roadside ginger-lemon tea';
+    else if(/jaipur|rajasthan/.test(d)) del = 'Authentic Dal Baati Churma, Pyaaz Kachori, Ghevar, Laal Maas, and thick mawa lassi at MI Road';
+    else if(/paris|france/.test(d)) del = 'Fresh butter croissants, baguettes with artisan cheese, Boeuf Bourguignon, and macarons';
+    return `<h3>🍽️ Culinary Recommendations for ${E(dest)}</h3>
+    <p>Don't leave ${E(dest)} without tasting: <b>${del}</b>.</p>
+    <ul>
+      <li><b>Where to eat:</b> Look for eateries crowded with locals — high customer turnover guarantees fresh, authentic food.</li>
+      <li><b>Hygiene tip:</b> Drink bottled or filtered water, and prefer cooked-to-order hot meals over pre-cut items.</li>
+    </ul>`;
+  }
+  if(/itinerary|plan|day|schedule|visit|see|attraction|things to do/.test(k)){
+    return `<h3>🗺️ Suggested ${days}-Day Itinerary Outline for ${E(dest)}</h3>
+    <ul>
+      <li><b>Day 1 (Arrival & Orientation):</b> Arrive, check in, take a relaxed stroll through the local market or scenic viewpoint, and enjoy dinner.</li>
+      <li><b>Day 2 (Top Landmarks & Culture):</b> Explore the city's signature cultural sites, museums, or historic forts in the morning; visit scenic sunset spots.</li>
+      <li><b>Day 3 (Adventure & Exploration):</b> Day trip to nearby scenic nature spots, waterfalls, or adventure sports; try authentic regional dinner.</li>
+      <li><b>Day 4 (Leisure & Shopping):</b> Souvenir shopping at local bazaars, cafe hopping, photography, and smooth departure.</li>
+    </ul>
+    <p class='mut'>Tip: You can add these activities directly to your <b>Itinerary</b> tab above!</p>`;
+  }
+  return `<h3>🧭 Travel Assistant Insights for ${E(dest)}</h3>
+  <p>Here are recommendations tailored for your <b>${E(t?t.style:'Standard')}</b> trip to <b>${E(dest)}</b> (${tr} traveler(s), ${days} days):</p>
+  <ul>
+    <li><b>Budget Monitoring:</b> You have planned <b>${bud}</b>. Check your <b>Smart Budget</b> tab to track spending velocity.</li>
+    <li><b>Safety & Connectivity:</b> Save local emergency contacts and download offline maps before traveling to remote or mountain zones.</li>
+    <li><b>Local Etiquette:</b> Respect regional traditions, dress modestly around heritage shrines and temples, and carry cash for small vendors.</li>
+  </ul>`;
+}
+function ai(){
+  const t=cur();modal(`<h3>${ic('message-circle')} Ask JourneyJar Travel AI</h3>
+    <div style='background:#18181B;border:1px solid #D4AF3733;border-radius:14px;padding:12px;margin:10px 0'>
+      <div style='display:flex;align-items:center;gap:8px;font-size:13px;color:#F5D76E;font-weight:600'>${ic('sparkles')} Smart Assistant for ${E(t?t.name:'your journey')}</div>
+      <div class='mut' style='font-size:12px;margin-top:4px'>Destination: <b>${E(t?t.to:'Travel')}</b> · Budget: <b>${t?M(t.budget,t.cur):'–'}</b> · Days: <b>${t?dys(t):'–'}</b></div>
+    </div>
+    <div style='margin-bottom:8px'>
+      <span class='mut' style='font-size:11px'>Suggested quick questions:</span>
+      <div class='row' style='justify-content:flex-start;gap:6px;margin-top:4px;flex-wrap:wrap'>
+        <button class='btn g s' onclick='$("#ai_q").value="How can I save money on this trip?";askAI()'>💰 Money saving tips</button>
+        <button class='btn g s' onclick='$("#ai_q").value="What are the essential packing items?";askAI()'>🎒 Must-pack list</button>
+        <button class='btn g s' onclick='$("#ai_q").value="Suggest a day-wise itinerary";askAI()'>🗺️ Itinerary plan</button>
+        <button class='btn g s' onclick='$("#ai_q").value="Famous local food to try";askAI()'>🍽️ Local food</button>
+      </div>
+    </div>
+    <label>Your question</label>
+    <textarea id='ai_q' rows='3' placeholder='e.g. How can I optimize my food and travel budget in ${E(t?t.to:'Goa')}?'></textarea>
+    <div id='ai_a' style='margin:12px 0;max-height:260px;overflow-y:auto'></div>
+    <details style='margin-bottom:12px;font-size:12px'><summary class='mut' style='cursor:pointer'>⚙️ Custom AI Endpoint (Optional)</summary><div style='margin-top:8px'><input id='ai_u' value='${E(D.aiUrl||'')}' placeholder='https://your-server.example/ask' style='font-size:12px'><button class='btn g s' style='margin-top:6px' onclick='D.aiUrl=$("#ai_u").value.trim();sv();toast("Endpoint saved")'>Save Endpoint</button></div></details>
+    <div class='row'><button class='btn g' onclick='cl()'>Close</button><button class='btn' onclick='askAI()'>${ic('sparkles')}Ask Assistant</button></div>`);
+}
+async function askAI(){
+  const q=$('#ai_q').value.trim(), o=$('#ai_a');
+  if(!q){o.innerHTML='<div class="err">Type a question first or tap a suggestion above.</div>';return}
+  o.innerHTML='<div class="card gl" style="text-align:center;padding:20px"><span class="sp"></span> Analyzing your trip and crafting recommendations…</div>';
+  const t=cur();
+  if(D.aiUrl){
+    try{
+      const r=await fetch(D.aiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,trip:t?{name:t.name,to:t.to,budget:t.budget,spent:tt(t),days:dys(t),travellers:t.trav}:null})});
+      if(!r.ok)throw 0;
+      const j=await r.json();
+      o.innerHTML=`<div class='card gl' style='border:1px solid #D4AF3744;padding:16px;line-height:1.6'>${E(j.answer||'No answer received from endpoint.').replace(/\n/g,'<br>')}</div>`;
+      return;
+    }catch(e){
+      o.innerHTML=`<div class='err'>Could not reach custom endpoint. Falling back to built-in JourneyJar AI…</div>`;
+      await new Promise(res=>setTimeout(res,600));
+    }
+  }
+  await new Promise(res=>setTimeout(res,350));
+  const ans=generateTravelAdvice(q, t);
+  o.innerHTML=`<div class='card gl' style='border:1px solid #D4AF3744;padding:16px;line-height:1.6;animation:in .3s'>${ans}</div>`;
+  ico();
+}
 if(D.theme)th(D.theme);
 /* ===== Firebase Auth + Firestore sync ===== */
 let FBMISS=[],FBSDK=false,FBFILE=location.protocol=='file:',FBOK=false,JJ=null;
@@ -133,7 +235,7 @@ return`<div class='err'><b>Firebase is not connected yet.</b> Still missing in f
 const LOGO="<svg width='30' height='30' viewBox='0 0 40 40'><path d='M3 32L15 12l7 11 5-7 10 16z' fill='#D4AF37'/><path d='M27 4a7 7 0 017 7c0 6-7 13-7 13s-7-7-7-13a7 7 0 017-7z' fill='#F5D76E'/><circle cx='27' cy='11' r='2.4' fill='#09090B'/></svg>";
 const FE={'auth/invalid-credential':'Incorrect email or password.','auth/wrong-password':'Incorrect email or password.','auth/user-not-found':'No account found for this email.','auth/email-already-in-use':'An account with this email already exists.','auth/weak-password':'Password is too weak (use at least 6 characters).','auth/invalid-email':'Enter a valid email address.','auth/too-many-requests':'Too many attempts. Please try again later.','auth/network-request-failed':'Network error. Check your connection.','auth/operation-not-allowed':'This sign-in method is not enabled. In the Firebase console open Authentication, Sign-in method, and enable it (Email/Password or Google).','auth/popup-closed-by-user':'The sign-in window was closed before finishing.','auth/cancelled-popup-request':'Another sign-in window is already open.','auth/popup-blocked':'Your browser blocked the sign-in pop-up. Allow pop-ups and try again.','auth/account-exists-with-different-credential':'An account already exists with this email using a different sign-in method.','permission-denied':'Firestore denied access. Publish the rules from firestore.rules.','auth/unauthorized-domain':'This website address is not authorised in Firebase. Add it under Authentication, Settings, Authorized domains (for example localhost or yourname.github.io).','auth/invalid-api-key':'The Firebase API key is invalid. Re-copy it from your Firebase project settings.','auth/api-key-not-valid.-please-pass-a-valid-api-key.':'The Firebase API key is invalid. Re-copy it from your Firebase project settings.','auth/configuration-not-found':'Authentication is not set up yet. In the Firebase console open Authentication and click Get started.','auth/operation-not-supported-in-this-environment':'Firebase login needs http or https. Use Live Server, localhost or GitHub Pages.'},fe=c=>FE[c]||'Something went wrong ('+(c||'unknown')+').';
 const cloud=x=>JSON.stringify([x.trips,x.exp,x.iti,x.cur,x.fav||[],x.user,x.cd||null,x.cdt||'',x.cds||0,x.pack||{}]);
-function am(m,msg){AM=m;const up=m==1,rs=m==2;$('#ab').innerHTML=`<div class='lgo' style='justify-content:center;font-size:24px'>${LOGO}<span>JourneyJar</span></div><p class='mut' style='text-align:center;margin:4px 0 0'>Every Journey, Within Your Budget.</p>${FBOK?'':fbHelp()}${rs?`<h3 style='margin-top:16px'>Reset your password</h3><p class='mut'>We will email you a reset link.</p>`:`<div class='at'><button class='${up?'':'on'}' onclick='am(0)'>Log in</button><button class='${up?'on':''}' onclick='am(1)'>Sign up</button></div>`}${up?`<label>Your name</label><input id='a_n' autocomplete='name'>`:''}<label>Email</label><input id='a_e' type='email' autocomplete='email'>${rs?'':`<label>Password</label><input id='a_p' type='password' autocomplete='${up?'new-password':'current-password'}' placeholder='At least 6 characters'>`}<div id='ae'></div><button class='btn' style='width:100%;justify-content:center;margin-top:14px' onclick='sub()'>${['Log in','Create account','Send reset link'][m]}</button>${FBOK&&m<2?`<div class='mut' style='text-align:center;margin:10px 0 6px'>or</div><button class='btn g' style='width:100%;justify-content:center' onclick='gsign()'><b style='color:#D4AF37'>G</b> Continue with Google</button>`:''}${m==0?`<p style='text-align:center'><a onclick='am(2)'>Forgot password?</a></p>`:''}${rs?`<p style='text-align:center'><a onclick='am(0)'>Back to log in</a></p>`:''}${FBOK?'':`<button class='btn g' style='width:100%;justify-content:center;margin-top:10px' onclick='offline()'>Continue offline (this device only)</button>`}`;if(msg)ae(msg,'ok')}
+function am(m,msg){AM=m;const up=m==1,rs=m==2;$('#ab').innerHTML=`<div class='lgo' style='justify-content:center;font-size:24px'>${LOGO}<span>JourneyJar</span></div><p class='mut' style='text-align:center;margin:4px 0 0'>Every Journey, Within Your Budget.</p>${FBOK?'':fbHelp()}${rs?`<h3 style='margin-top:16px'>Reset your password</h3><p class='mut'>We will email you a reset link.</p>`:`<div class='at'><button class='${up?'':'on'}' onclick='am(0)'>Log in</button><button class='${up?'on':''}' onclick='am(1)'>Sign up</button></div>`}${up?`<label>Your name</label><input id='a_n' autocomplete='name'>`:''}<label>Email</label><input id='a_e' type='email' autocomplete='email'>${rs?'':`<label>Password</label><input id='a_p' type='password' autocomplete='${up?'new-password':'current-password'}' placeholder='At least 6 characters'>`}<div id='ae'></div><button class='btn' style='width:100%;justify-content:center;margin-top:14px' onclick='sub()'>${['Log in','Create account','Send reset link'][m]}</button>${FBOK&&m<2?`<div class='mut' style='text-align:center;margin:10px 0 6px'>or</div><button class='btn g' style='width:100%;justify-content:center' onclick='gsign()'><b style='color:#D4AF37'>G</b> Continue with Google</button>`:''}${m==0?`<p style='text-align:center'><a onclick='am(2)'>Forgot password?</a></p>`:''}${rs?`<p style='text-align:center'><a onclick='am(0)'>Back to log in</a></p>`:''}${m<2?`<div class='mut' style='text-align:center;margin:10px 0 6px'>or</div><button class='btn g' style='width:100%;justify-content:center' onclick='offline()'>${ic('compass')}Continue as Guest (No login needed)</button>`:''}`;if(msg)ae(msg,'ok')}
 function ae(m,c){const o=$('#ae');if(o)o.innerHTML=m?`<div class='${c=='ok'?'al good':c=='mut'?'mut':'err'}' style='margin:10px 0'>${m}</div>`:''}
 async function sub(){const g=k=>($('#a_'+k)?.value||'').trim(),e=g('e'),p=$('#a_p')?.value||'',n=g('n');let m='';
 if(AM==1&&!n)m='Enter your name.';else if(!(e.includes('@')&&(e.split('@')[1]||'').includes('.')))m='Enter a valid email address.';else if(AM<2&&p.length<6)m='Password must be at least 6 characters.';
@@ -143,7 +245,7 @@ async function gsign(){if(!FBOK)return ae('Firebase is not connected yet.');ae('
 function legacy(){try{D=JSON.parse(localStorage.getItem(K))}catch(e){D=null}if(!D)D=seed()}
 function offline(){legacy();LOCK=false;$('#au').className='off';V.p='home';V.trip=D.trips[0]?.id;R()}
 function logout(){cl();if(U&&FBOK){if(unsub)unsub();unsub=null;JJ.signOut()}else{LOCK=true;D={user:'',cur:'INR',trips:[],exp:[],iti:[]};$('#pg').innerHTML='';$('#au').className='';am(0)}}
-function prof(){return`<div class='card' style='margin-top:0;max-width:520px'><h3>Profile</h3><div class='st'><div class='ib'>${ic('user')}</div><div><b>${E(D.user)}</b><span>${U?E(U.email):'Offline mode (this device only)'}</span></div></div><p class='mut'>${U?'Your trips, expenses and budgets sync to your account on every device.':'Cloud sync is off. Log in to enable it.'}</p><button class='btn r' onclick='logout()'>${ic('log-out')}${U?'Log out':'Exit offline mode'}</button></div>`}
+function prof(){return`<div class='card' style='margin-top:0;max-width:520px'><h3>Profile</h3><div class='st'><div class='ib'>${ic('user')}</div><div><b>${E(D.user)}</b><span>${U?E(U.email):'Offline mode (this device only)'}</span></div></div><p class='mut'>${U?'Your trips, expenses and budgets sync to your account on every device.':'Cloud sync is off. Log in to sync your trips across all devices.'}</p><div class='row' style='justify-content:flex-start;gap:8px'>${U?'':`<button class='btn' onclick='$("#au").className="";LOCK=true;am(0)'>${ic('log-in')}Log In / Create Account</button>`}<button class='btn r' onclick='logout()'>${ic('log-out')}${U?'Log out':'Exit offline mode'}</button></div></div>`}
 function setName(v){v=v.trim()||'Traveler';D.user=v;sv();if(U&&FBOK)JJ.setName(v).catch(()=>{});toast('Saved')}
 function cpush(){if(!U||!FBOK)return;clearTimeout(ptm);ptm=setTimeout(pushNow,500)}
 function pushNow(){if(!U||!FBOK)return;JJ.saveUser(U.uid,JSON.parse(JSON.stringify({trips:D.trips,exp:D.exp,iti:D.iti,cur:D.cur,fav:D.fav||[],user:D.user,cd:D.cd||null,cdt:D.cdt||'',cds:D.cds||0,pack:D.pack||{},email:U.email,updated:Date.now()}))).catch(e=>toast('Cloud save failed: '+(e.code||e.message)))}
@@ -218,67 +320,213 @@ function vpv(i){const r=window._vr[i],u=URL.createObjectURL(r.blob);modal(`<h3 s
 function vrn(i){modal(`<h3>Rename document</h3><input id='v_n'><div class='row' style='margin-top:14px'><button class='btn g' onclick='cl()'>Cancel</button><button class='btn' onclick='vrs(${i})'>Save</button></div>`);$('#v_n').value=window._vr[i].name}
 async function vrs(i){const n=$('#v_n').value.trim();if(!n||n.includes('/')||n.includes('\\'))return toast('Enter a valid file name');const r={...window._vr[i],name:n};try{await tx('readwrite',s=>s.put(r));cl();vl();toast('Renamed')}catch(e){toast('Could not rename')}}
 function vdel(i){const r=window._vr[i];cf('Delete this document from the vault?',async()=>{try{await tx('readwrite',s=>s.delete(r.id));vl();toast('Document deleted')}catch(e){toast('Could not delete')}})}
-/* ===== JourneyJar Discover (Wikipedia + optional TMDB / YouTube proxies) ===== */
-const WK='https://en.wikipedia.org',DS={q:'',tab:'Overview',load:false,err:'',data:null,mv:null,dc:null,sg:[]},DT=['Overview','Images','Movies','Stories','Places','Culture'],FEAT=[['Manali','🏔️'],['Goa','🏖️'],['Paris','🗼'],['Varanasi','🪔'],['Tokyo','🏯'],['Jaipur','🏰'],['Kyoto','⛩️'],['Bali','🌺']];
+/* ===== JourneyJar Discover: live data only (Wikipedia, Wikimedia Commons, TMDB through your backend proxy) ===== */
+const WK='https://en.wikipedia.org',CM='https://commons.wikimedia.org',DS={q:'',tab:'Overview',load:false,err:'',data:null,mv:null,st:null,cu:null,sg:[],recent:[]},DT=['Overview','Images','Movies','Stories','Places','Culture'],FEAT=[['Manali','🏔️'],['Goa','🏖️'],['Paris','🗼'],['Varanasi','🪔'],['Tokyo','🏯'],['Jaipur','🏰'],['Kyoto','⛩️'],['Bali','🌺']];
 const FBI='data:image/svg+xml,'+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><rect width='400' height='300' fill='#202024'/><text x='200' y='165' font-size='46' text-anchor='middle'>🧭</text></svg>");
-const dj=async u=>{const a=new AbortController(),tm=setTimeout(()=>a.abort(),8000);try{const r=await fetch(u,{signal:a.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(tm)}},enc=encodeURIComponent,dec=s=>{const t=document.createElement('textarea');t.innerHTML=s||'';return t.value},ea=s=>E(s).split(String.fromCharCode(39)).join('&#39;'),clip=(s,n)=>!s||s.length<=n?(s||''):s.slice(0,s.lastIndexOf(' ',n))+'…';
+const dj=async u=>{const a=new AbortController(),tm=setTimeout(()=>a.abort(),10000);try{const r=await fetch(u,{signal:a.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(tm)}},enc=encodeURIComponent,ea=s=>E(s).split(String.fromCharCode(39)).join('&#39;'),clip=(s,n)=>!s||s.length<=n?(s||''):s.slice(0,s.lastIndexOf(' ',n))+'…';
+const strip=s=>s?(new DOMParser().parseFromString(String(s),'text/html').body.textContent||'').trim():'';
 const hav=(a,b,c,d)=>{const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 12742*Math.asin(Math.sqrt(x))};
-function isoD(d){let h=0,m=0,s=0,n='';for(const ch of (d||'').slice(2)){if(ch>='0'&&ch<='9')n+=ch;else{if(ch=='H')h=+n;if(ch=='M')m=+n;if(ch=='S')s=+n;n=''}}return h?h+'h '+m+'m':m+'m '+s+'s'}
+const wapi=p=>dj(`${WK}/w/api.php?format=json&origin=*&${p}`),wurl=t=>WK+'/wiki/'+enc(t.split(' ').join('_'));
 function imgE(i){i.onerror=null;i.src=FBI;i.classList.add('ok')}function imgL(i){i.classList.add('ok')}
 const im=(s,c)=>`<img class='gi ${c||''}' loading='lazy' src='${ea(s||FBI)}' alt='' onload='imgL(this)' onerror='imgE(this)'>`;
-const DEMO={goa:[{t:'Dil Chahta Hai',y:'2001',g:'Comedy-drama',rel:'Filmed in this destination',o:'Three friends drift apart and reunite; part of the story takes place in Goa.'},{t:'Dum Maaro Dum',y:'2011',g:'Crime thriller',rel:'Set in this destination',o:'A police officer investigates a drug network operating in Goa.'}],manali:[{t:'Jab We Met',y:'2007',g:'Romantic comedy',rel:'Partly filmed in this destination',o:'A heartbroken businessman and a talkative girl meet on a train journey.'},{t:'Yeh Jawaani Hai Deewani',y:'2013',g:'Romantic drama',rel:'Partly filmed in this destination',o:'Friends reunite after a Manali trek and revisit their choices.'}],paris:[{t:'Amélie',y:'2001',g:'Romantic comedy',rel:'Set in and filmed in this destination',o:'A shy waitress in Montmartre quietly improves the lives of those around her.'},{t:'Midnight in Paris',y:'2011',g:'Fantasy romantic comedy',rel:'Set in and filmed in this destination',o:'A writer is transported to the 1920s each midnight.'},{t:'Ratatouille',y:'2007',g:'Animated comedy',rel:'Set in this destination (animated)',o:'A rat with a gift for cooking dreams of working in a Paris restaurant.'}],varanasi:[{t:'Raanjhanaa',y:'2013',g:'Romantic drama',rel:'Set in and filmed in this destination',o:'A young man in Varanasi pursues a love that unfolds over many years.'},{t:'Masaan',y:'2015',g:'Drama',rel:'Set in this destination',o:'Two intertwined stories of love and loss along the ghats of the Ganges.'}],tokyo:[{t:'Lost in Translation',y:'2003',g:'Drama',rel:'Set in and filmed in this destination',o:'Two strangers form a bond in Tokyo.'},{t:'Tokyo Story',y:'1953',g:'Drama',rel:'Set in this destination',o:'An elderly couple visits their grown children in Tokyo.'}]};
-/* search and suggestions */
-let dst;function dSug(v){clearTimeout(dst);const o=$('#ds');if(!o)return;if(v.trim().length<2){o.innerHTML='';return}dst=setTimeout(async()=>{try{const j=await dj(`${WK}/w/api.php?action=opensearch&format=json&origin=*&limit=6&search=${enc(v.trim())}`);DS.sg=j[1];o.innerHTML=j[1].length?`<div class='sg'>${j[1].map((t,i)=>`<div onclick='dSg(${i})'>${E(t)} <span class='mut'>${E(clip(j[2][i]||'',60))}</span></div>`).join('')}</div>`:''}catch(e){DS.sg=LOC.filter(x=>x.n.toLowerCase().includes(v.trim().toLowerCase())).map(x=>x.n);o.innerHTML=DS.sg.length?`<div class='sg'>${DS.sg.map((t,i)=>`<div onclick='dSg(${i})'>${E(t)} <span class='mut'>offline guide</span></div>`).join('')}</div>`:''}},250)}
+const skel=n=>`<div class='grid a3'>${Array.from({length:n},()=>`<div class='card skl' style='height:200px'></div>`).join('')}</div>`,emp=(i,h,p)=>`<div class='card gl' style='text-align:center;padding:30px'><div style='font-size:40px'>${i}</div><h3>${h}</h3><p class='mut'>${p}</p></div>`;
+/* ---- search and suggestions ---- */
+let dst;function dSug(v){clearTimeout(dst);const o=$('#ds');if(!o)return;if(v.trim().length<2){o.innerHTML='';return}dst=setTimeout(async()=>{try{const j=await dj(`${WK}/w/api.php?action=opensearch&format=json&origin=*&limit=6&search=${enc(v.trim())}`);DS.sg=j[1];o.innerHTML=j[1].length?`<div class='sg'>${j[1].map((t,i)=>`<div onclick='dSg(${i})'>${E(t)} <span class='mut'>${E(clip(j[2][i]||'',60))}</span></div>`).join('')}</div>`:''}catch(e){o.innerHTML=''}},250)}
 function dSg(i){$('#ds').innerHTML='';$('#d_q').value=DS.sg[i];dLoad(DS.sg[i])}
 function dGo(q){q=(q||$('#d_q').value).trim();$('#ds').innerHTML='';if(!q)return toast('Type a destination to explore');dLoad(q)}
 function dF(i){$('#d_q').value=FEAT[i][0];dLoad(FEAT[i][0])}function dWl(i){$('#d_q').value=D.wish[i].name;dLoad(D.wish[i].name)}
-function dDraw(){const o=$('#dres');if(o){o.innerHTML=(DS.offline&&DS.data?`<div class='al warn' style='margin-bottom:12px'><b>Offline guide.</b> Live Wikipedia data could not be loaded (it can be blocked in sandboxed previews), so you are seeing built-in notes and illustrations. <button class='btn s' onclick='dLoad(DS.q)'>Retry live data</button></div>`:'')+dBody()+(DS.err&&!DS.load?dFeat():'');ico()}}
-async function dLoad(q){DS.q=q;DS.load=true;DS.err='';DS.data=null;DS.mv=null;DS.dc=null;DS.tab='Overview';dDraw();const ck='jj:d:'+q.toLowerCase();
+function dDraw(){const o=$('#dres');if(o){o.innerHTML=(DS.offline&&DS.data?`<div class='al warn' style='margin-bottom:12px'><b>Offline guide.</b> Live data could not be loaded, so you are seeing built-in notes. <button class='btn s' onclick='dLoad(DS.q)'>Retry live data</button></div>`:'')+dBody()+(DS.err&&!DS.load?dFeat():'');ico()}}
+/* ---- destination data: Wikipedia (text), Commons (photos), Wikipedia geosearch (places) ---- */
+async function dImgs(c){const q=async s=>{const j=await dj(`${CM}/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30&gsrsearch=${enc(s+' filetype:bitmap')}&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName|ImageDescription|ObjectName`);
+return Object.values(j.query?.pages||{}).sort((a,b)=>a.index-b.index).map(p=>{const i=p.imageinfo?.[0],m=i?.extmetadata||{};if(!i||i.mime!='image/jpeg'||/flag|map|locator|logo|diagram|coat|seal|poster|plan|chart|stamp/i.test(p.title))return null;
+return{src:i.thumburl||i.url,full:i.url,cap:clip(strip(m.ImageDescription?.value)||strip(m.ObjectName?.value)||p.title.replace('File:','').split('.').slice(0,-1).join('.').split('_').join(' '),150),by:clip(strip(m.Artist?.value),60),lic:m.LicenseShortName?.value||'',link:i.descriptionurl}}).filter(Boolean)};
+let l=await q(c.t.split(',').join(' '));if(l.length<6)l=[...l,...(await q(c.nm)).filter(x=>!l.some(y=>y.full==x.full))];return l.slice(0,24)}
+async function dPlaces(c){if(!c.co)return[];const j=await wapi(`action=query&generator=geosearch&ggscoord=${c.co.lat}|${c.co.lon}&ggsradius=10000&ggslimit=20&prop=extracts|pageimages|coordinates|pageviews&exintro=1&explaintext=1&exsentences=2&exlimit=max&piprop=thumbnail&pithumbsize=600&colimit=max&pvipdays=30`);
+const l=Object.values(j.query?.pages||{}).filter(p=>p.title!=c.ti&&p.extract&&p.coordinates).map(p=>({n:p.title,x:p.extract,img:p.thumbnail?.source||'',lat:p.coordinates[0].lat,lon:p.coordinates[0].lon,d:hav(c.co.lat,c.co.lon,p.coordinates[0].lat,p.coordinates[0].lon),v:Object.values(p.pageviews||{}).reduce((a,b)=>a+(b||0),0),u:wurl(p.title),h:/fort|palace|temple|mosque|church|cathedral|tomb|ruin|monument|museum|heritage|ghat|shrine|castle/i.test(p.extract)}));
+l.sort((a,b)=>b.v-a.v);const t=l.slice(0,16);t.forEach((p,i)=>{p.tag=i<8?'Popular on Wikipedia':'Lesser-known'});return t}
+async function wrel(q,n,c){const j=await wapi(`action=query&generator=search&gsrnamespace=0&gsrlimit=${n}&gsrsearch=${enc(q)}&prop=extracts|pageimages&exintro=1&explaintext=1&exsentences=3&exlimit=max&piprop=thumbnail&pithumbsize=500`);
+return Object.values(j.query?.pages||{}).sort((a,b)=>a.index-b.index).filter(p=>p.title!=c.ti&&p.extract&&(p.title+' '+p.extract).toLowerCase().includes(c.nm.toLowerCase())).map(p=>({n:p.title,x:p.extract,img:p.thumbnail?.source||'',u:wurl(p.title)}))}
+async function dLoad(q){DS.q=q;DS.load=true;DS.err='';DS.data=null;DS.mv=null;DS.st=null;DS.cu=null;DS.tab='Overview';DS.offline=false;dDraw();const ck='jj:d2:'+q.toLowerCase();
 try{let c=null;try{c=JSON.parse(sessionStorage.getItem(ck))}catch(e){}
-if(!c){const s=await dj(`${WK}/w/api.php?action=opensearch&format=json&origin=*&limit=1&search=${enc(q)}`);if(!s[1].length)throw new Error('nf');const ti=s[1][0],pt=enc(ti.split(' ').join('_')),sum=await dj(`${WK}/api/rest_v1/page/summary/${pt}`);if(sum.type=='disambiguation')throw new Error('amb');
-const[md,tx,nr]=await Promise.allSettled([dj(`${WK}/api/rest_v1/page/media-list/${pt}`),dj(`${WK}/w/api.php?action=query&format=json&origin=*&prop=extracts&explaintext=1&redirects=1&titles=${enc(ti)}`),sum.coordinates?dj(`${WK}/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=${sum.coordinates.lat}|${sum.coordinates.lon}&ggsradius=10000&ggslimit=25&prop=extracts|pageimages|coordinates&exintro=1&explaintext=1&exsentences=2&exlimit=max&piprop=thumbnail&pithumbsize=480&colimit=max`):Promise.reject(0)]);
-c={t:sum.title,nm:sum.title.split(',')[0],ds:sum.description||'',ex:sum.extract||'',url:sum.content_urls?.desktop?.page||'',cv:sum.originalimage?.source||sum.thumbnail?.source||'',co:sum.coordinates||null,gal:[],sec:{},pl:[]};
-if(md.status=='fulfilled')c.gal=(md.value.items||[]).filter(x=>x.type=='image'&&x.srcset&&x.srcset.length&&!/flag|map|locator|icon|logo|coat_of|seal|symbol|commons|wikimedia|svg/i.test(x.title||'')).slice(0,24).map(x=>{const u=x.srcset[x.srcset.length-1].src;return{src:u.startsWith('http')?u:'https:'+u,full:x.original?.source||'',cap:x.caption?.text||(x.title||'').replace('File:','').split('_').join(' ').split('.').slice(0,-1).join('.')}});
+if(!c){const s=await dj(`${WK}/w/api.php?action=opensearch&format=json&origin=*&limit=1&search=${enc(q)}`);if(!s[1].length)throw new Error('nf');const ti=s[1][0],sum=await dj(`${WK}/api/rest_v1/page/summary/${enc(ti.split(' ').join('_'))}`);if(sum.type=='disambiguation')throw new Error('amb');
+c={ti,t:sum.title,nm:sum.title.split(',')[0],ds:sum.description||'',ex:sum.extract||'',url:sum.content_urls?.desktop?.page||'',cv:sum.originalimage?.source||sum.thumbnail?.source||'',co:sum.coordinates||null,gal:[],sec:{},pl:[]};
+const[tx,pl,gl]=await Promise.allSettled([wapi(`action=query&prop=extracts&explaintext=1&redirects=1&titles=${enc(ti)}`),dPlaces(c),dImgs(c)]);
 if(tx.status=='fulfilled'){const pg=Object.values(tx.value.query.pages)[0],L=(pg.extract||'').split(String.fromCharCode(10));let k='';L.forEach(l=>{if(l.startsWith('==')){k=l.split('=').join('').trim()}else if(k&&l.trim())c.sec[k]=(c.sec[k]||'')+l.trim()+' '})}
-if(nr.status=='fulfilled'&&nr.value.query)c.pl=Object.values(nr.value.query.pages).filter(p=>p.title!=ti&&p.extract&&p.coordinates).map(p=>({n:p.title,x:p.extract,img:p.thumbnail?.source||'',d:c.co?hav(c.co.lat,c.co.lon,p.coordinates[0].lat,p.coordinates[0].lon):0,u:WK+'/wiki/'+enc(p.title.split(' ').join('_'))})).sort((a,b)=>(!a.img-!b.img)||a.d-b.d).slice(0,12);
+if(pl.status=='fulfilled')c.pl=pl.value;else c.pe=1;if(gl.status=='fulfilled')c.gal=gl.value;else c.ie=1;
 try{sessionStorage.setItem(ck,JSON.stringify(c))}catch(e){}}
-DS.data=c;DS.offline=false}catch(e){const L=dLocal(q);if(L){DS.data=L;DS.offline=true}else DS.err=e.message=='nf'?'nf':e.message=='amb'?'amb':'net'}DS.load=false;if(DS.data&&U&&FBOK){JJ.recordSearch(U.uid,DS.data.nm).catch(()=>{});DS.recent=[DS.data.nm,...(DS.recent||[]).filter(x=>x!=DS.data.nm)].slice(0,8)}dDraw()}
-/* tabs */
-function dTab(x){DS.tab=x;if(x=='Movies'&&!DS.mv)dMv();if(x=='Stories'&&!DS.dc)dDc();dDraw()}
-const skel=n=>`<div class='grid a3'>${Array.from({length:n},()=>`<div class='card skl' style='height:200px'></div>`).join('')}</div>`,emp=(i,h,p)=>`<div class='card gl' style='text-align:center;padding:30px'><div style='font-size:40px'>${i}</div><h3>${h}</h3><p class='mut'>${p}</p></div>`;
+DS.data=c}catch(e){const L=DISCOVER_CONFIG.offlineGuide===true?dLocal(q):null;if(L){DS.data=L;DS.offline=true}else DS.err=e.message=='nf'?'nf':e.message=='amb'?'amb':'net'}
+DS.load=false;if(DS.data&&U&&FBOK){JJ.recordSearch(U.uid,DS.data.nm).catch(()=>{});DS.recent=[DS.data.nm,...(DS.recent||[]).filter(x=>x!=DS.data.nm)].slice(0,8)}dDraw()}
+function dTab(x){DS.tab=x;if(x=='Movies'&&!DS.mv)dMv();if(x=='Stories'&&!DS.st)dSt();if(x=='Culture'&&!DS.cu)dCu();dDraw()}
+/* ---- stories and culture: real Wikipedia articles about the destination ---- */
+async function dSt(){DS.st={load:true};dDraw();const c=DS.data;try{const[a,b]=await Promise.all([wrel(c.nm+' history',6,c),wrel(c.nm+' legend OR folklore OR mythology',4,c)]),seen=new Set();DS.st={list:[...a,...b].filter(p=>!seen.has(p.n)&&seen.add(p.n)).slice(0,9)}}catch(e){DS.st={err:e.message}}dDraw()}
+async function dCu(){DS.cu={load:true};dDraw();const c=DS.data,G=[['Festivals','festival'],['Food and cuisine','cuisine food'],['Art and crafts','art craft'],['Architecture','architecture'],['Traditions','tradition culture']];
+try{const r=await Promise.allSettled(G.map(g=>wrel(c.nm+' '+g[1],3,c))),seen=new Set(),g=G.map((x,i)=>[x[0],r[i].status=='fulfilled'?r[i].value.filter(p=>!seen.has(p.n)&&seen.add(p.n)):[]]).filter(x=>x[1].length);DS.cu={g,failed:r.every(x=>x.status=='rejected')}}catch(e){DS.cu={failed:true}}dDraw()}
+const rc=l=>`<div class='grid a3'>${l.map(p=>`<div class='card gl h'>${p.img?`<div class='dcv skl' style='aspect-ratio:16/10;min-height:0;border-radius:14px'>${im(p.img)}</div>`:''}<h3 style='margin:10px 0 2px'>${E(p.n)}</h3><p class='mut'>${E(clip(p.x,230))}</p><a href='${ea(p.u)}' target='_blank' rel='noopener' style='color:var(--teal)'>Read on Wikipedia ↗</a></div>`).join('')}</div>`;
+/* ---- movies and documentaries: pre-stored destination cinema database + TMDB live proxy fallback ---- */
+const LOCAL_MOVIES = {
+  manali: {
+    movies: [
+      { id: 'm1', t: 'Yeh Jawaani Hai Deewani', y: '2013', r: '7.6', g: 'Romance, Drama', rel: 'Filmed in Manali & Gulmarg', o: 'Bunny and Naina embark on a life-changing trekking trip to the snow-covered peaks of Manali, discovering friendship and love.', p: 'https://image.tmdb.org/t/p/w500/em39H81XLCDgXsI7V4IcBZseEO6.jpg', yt: 'RBPmCML2QAw', runtime: 160 },
+      { id: 'm2', t: 'Highway', y: '2014', r: '7.6', g: 'Drama, Adventure', rel: 'Himachal & Spiti Journey', o: 'A captivating road journey through the breathtaking landscapes of Himachal Pradesh, Spiti Valley, and the Northern mountains.', yt: '21Q92kHj9Bw', runtime: 133 },
+      { id: 'm3', t: 'Jab We Met', y: '2007', r: '7.9', g: 'Romance, Comedy', rel: 'Rohtang Pass & Manali', o: 'A spirited girl and a depressed businessman cross paths on a spontaneous train trip that leads them into the high valleys of Rohtang and Manali.', p: 'https://image.tmdb.org/t/p/w500/kp9xnwDALUt6nuPBGuJHlvnxGnM.jpg', yt: 'jNlM0Yx_Ebg', runtime: 138 },
+      { id: 'm4', t: 'Bang Bang!', y: '2014', r: '5.6', g: 'Action, Romance', rel: 'Scenic Snow Slopes', o: 'High-octane action thriller featuring romantic sequences and chase scenes shot against scenic snow slopes of Manali and Shimla.', yt: 'bmtz4pPekd8', runtime: 153 }
+    ],
+    docs: [
+      { id: 'd1', t: 'Living in the Himalayas', y: '2020', r: '8.0', g: 'Documentary', rel: 'Himalayan Culture', o: 'An intimate look into mountain communities, trans-Himalayan traditions, and life amid the snow lines of Himachal Pradesh.', yt: 'E0T6e-bB7lE', runtime: 48 },
+      { id: 'd2', t: 'Gaddi: Nomads of the High Passes', y: '2021', r: '7.8', g: 'Documentary', rel: 'Tribal Traditions', o: 'Follow the shepherd tribes of Himachal as they navigate ancestral high-altitude passes between Kullu, Manali, and Lahaul.', yt: 'E0T6e-bB7lE', runtime: 52 }
+    ]
+  },
+  goa: {
+    movies: [
+      { id: 'm5', t: 'Dil Chahta Hai', y: '2001', r: '8.1', g: 'Comedy, Drama', rel: 'Iconic Goa Road Trip', o: 'The definitive coming-of-age journey of three college friends whose trip to Goa and Chapora Fort transforms their bonds forever.', p: 'https://image.tmdb.org/t/p/w500/d5yjk7hbv8AK0DR0oJUrSGHMn9A.jpg', yt: 'm13b25V0B10', runtime: 183 },
+      { id: 'm6', t: 'Dear Zindagi', y: '2016', r: '7.5', g: 'Drama, Romance', rel: 'North Goa Serenity', o: 'A young cinematographer discovers healing, cycling along coconut-lined roads and serene Portuguese quarters in North Goa.', yt: '5DkO7ksXY8E', runtime: 151 },
+      { id: 'm7', t: 'Go Goa Gone', y: '2013', r: '6.6', g: 'Comedy, Horror', rel: 'Beach Adventure', o: 'Friends head to a secluded beach rave on an isolated island off Goa that spirals into wild, comic chaos.', yt: '4kU3mJkY6w0', runtime: 108 },
+      { id: 'm8', t: 'Finding Fanny', y: '2014', r: '6.1', g: 'Comedy, Adventure', rel: 'Rural Goan Villages', o: 'Five quirky Goans set out on an eccentric road trip in an old convertible across lush countryside villages of Goa.', yt: 'iC-uX1r5_5A', runtime: 102 }
+    ],
+    docs: [
+      { id: 'd3', t: 'Wild Goa: The Secret Coast', y: '2019', r: '7.7', g: 'Documentary', rel: 'Coastal Biodiversity', o: 'Beyond parties and beaches, explore the lush Western Ghats jungles, mangroves, and vibrant wildlife of coastal Goa.', yt: 'm13b25V0B10', runtime: 45 },
+      { id: 'd4', t: 'Susegad: The Goan Art of Living', y: '2022', r: '7.9', g: 'Documentary', rel: 'Heritage & Lifestyle', o: 'Exploring the relaxed Goan philosophy of contentment, Portuguese heritage architecture, and coastal community cuisine.', yt: '5DkO7ksXY8E', runtime: 50 }
+    ]
+  },
+  paris: {
+    movies: [
+      { id: 'm9', t: 'Midnight in Paris', y: '2011', r: '7.7', g: 'Fantasy, Romance', rel: 'Streets of Paris', o: 'A nostalgic Hollywood screenwriter finds himself mysteriously transported back to the 1920s Parisian golden age every midnight.', yt: 'BYRWfS2s2v4', runtime: 94 },
+      { id: 'm10', t: 'Amélie', y: '2001', r: '8.3', g: 'Comedy, Romance', rel: 'Montmartre, Paris', o: 'An imaginative Parisian waitress decides to quietly change the lives of the people around her in picturesque Montmartre.', yt: 'HUECWi5pX7o', runtime: 122 },
+      { id: 'm11', t: 'Before Sunset', y: '2004', r: '8.1', g: 'Romance, Drama', rel: 'Seine River & Latin Quarter', o: 'Two former lovers reunite nine years later for an afternoon walking the charming bookstores, cafes, and canals of Paris.', yt: 'oI3UuneLcyU', runtime: 80 },
+      { id: 'm12', t: 'Ratatouille', y: '2007', r: '8.0', g: 'Animation, Family', rel: 'Parisian Culinary World', o: 'A passionate rodent chef with extraordinary culinary taste pursues his dream in the most renowned kitchens of Paris.', yt: 'NgsQ8mCUGC8', runtime: 111 }
+    ],
+    docs: [
+      { id: 'd5', t: 'Paris: The Mystery of the Lost Palace', y: '2019', r: '7.8', g: 'Documentary', rel: 'Historic Monuments', o: 'Uncovering 2,000 years of architectural and cultural marvels beneath modern Paris and the Île de la Cité.', yt: 'BYRWfS2s2v4', runtime: 53 },
+      { id: 'd6', t: 'The Seine: River of Romance', y: '2021', r: '8.0', g: 'Documentary', rel: 'City of Lights', o: 'A stunning scenic journey along the Seine exploring historic bridges, Parisian river culture, and riverside life.', yt: 'oI3UuneLcyU', runtime: 49 }
+    ]
+  },
+  jaipur: {
+    movies: [
+      { id: 'm13', t: 'The Best Exotic Marigold Hotel', y: '2011', r: '7.2', g: 'Comedy, Drama', rel: 'Pink City & Heritage', o: 'British retirees travel to Jaipur to stay in what they believe is a restored luxury palace hotel in the historic heart of Rajasthan.', yt: 'dDY89LYxK0w', runtime: 124 },
+      { id: 'm14', t: 'Shuddh Desi Romance', y: '2013', r: '6.0', g: 'Romance, Comedy', rel: 'Jaipur Bazaars & Streets', o: 'A fresh, lighthearted modern romance filmed throughout the buzzing bazaars, pink city walls, and rooftop terraces of Jaipur.', yt: 'KxL99H7vU7U', runtime: 141 },
+      { id: 'm15', t: 'Jodhaa Akbar', y: '2008', r: '7.6', g: 'History, Romance', rel: 'Amer Fort & Rajasthan', o: 'Sixteenth-century grand romance and statecraft featuring majestic sequences shot inside the historic Amer Fort and Rajasthan palaces.', yt: 'mQZ3_4pE3c8', runtime: 213 },
+      { id: 'm16', t: 'The Fall', y: '2006', r: '7.9', g: 'Fantasy, Adventure', rel: 'Chand Baori & Amber Palace', o: 'A visually breathtaking cinematic fantasy filmed across the ancient Chand Baori stepwells and Amber Palace in Rajasthan.', yt: 'iO0LYcCoeJY', runtime: 117 }
+    ],
+    docs: [
+      { id: 'd7', t: 'Royal Fortresses of Rajasthan', y: '2020', r: '8.2', g: 'Documentary', rel: 'UNESCO Hill Forts', o: 'Aerial and ground exploration of the monumental hill forts of Amer, Mehrangarh, and Chittorgarh.', yt: 'dDY89LYxK0w', runtime: 55 }
+    ]
+  },
+  tokyo: {
+    movies: [
+      { id: 'm17', t: 'Lost in Translation', y: '2003', r: '7.7', g: 'Drama', rel: 'Shinjuku & Shibuya', o: 'Two lonely Americans find deep, quiet friendship navigating the neon avenues, karaoke rooms, and serene shrines of Tokyo.', p: 'https://image.tmdb.org/t/p/w500/kJraK1nGYuP9jlAZstN9VWhxjjz.jpg', yt: 'W6iVPCRflQM', runtime: 102 },
+      { id: 'm18', t: 'Your Name (Kimi no Na wa)', y: '2016', r: '8.4', g: 'Animation, Fantasy', rel: 'Tokyo Crossroads', o: 'Two teenagers share a magical connection that takes them across rural mountains and bustling Tokyo crossroads.', p: 'https://image.tmdb.org/t/p/w500/q719jXXEzOoYaps6babgKnONONX.jpg', yt: 'xU47nhruN-Q', runtime: 107 },
+      { id: 'm19', t: 'The Fast and the Furious: Tokyo Drift', y: '2006', r: '6.0', g: 'Action', rel: 'Shibuya Nightlife', o: 'An American high schooler enters the underground drift racing world in neon-lit nighttime Tokyo parking garages and streets.', yt: 'p8HQ2JeQg48', runtime: 104 }
+    ],
+    docs: [
+      { id: 'd8', t: 'Jiro Dreams of Sushi', y: '2011', r: '7.9', g: 'Documentary', rel: 'Tokyo Culinary Mastery', o: 'A tribute to 85-year-old sushi master Jiro Ono and the tireless culinary mastery of Tokyo.', yt: 'I1UDS2kgqY8', runtime: 81 }
+    ]
+  },
+  bali: {
+    movies: [
+      { id: 'm20', t: 'Eat Pray Love', y: '2010', r: '5.8', g: 'Romance, Drama', rel: 'Ubud Rice Terraces', o: 'A woman embarks on a worldwide journey of self-discovery, finding peace and romance amid the emerald terraces of Ubud, Bali.', yt: 'mjay5vgIwt4', runtime: 140 },
+      { id: 'm21', t: 'Ticket to Paradise', y: '2022', r: '6.2', g: 'Comedy, Romance', rel: 'Tropical Bali Coast', o: 'Divorced parents team up and travel to tropical Bali to stop their daughter from making a hasty marriage.', yt: 'hkP4tVTdsz8', runtime: 104 }
+    ],
+    docs: [
+      { id: 'd9', t: 'Bali: Island of the Gods', y: '2021', r: '8.0', g: 'Documentary', rel: 'Balinese Culture', o: 'Discover the sacred water temples, volcanic slopes, traditional gamelan music, and dance ceremonies of Bali.', yt: 'mjay5vgIwt4', runtime: 51 }
+    ]
+  },
+  varanasi: {
+    movies: [
+      { id: 'm22', t: 'Raanjhanaa', y: '2013', r: '7.6', g: 'Romance, Drama', rel: 'Ghats of Varanasi', o: 'A passionate love story set in the winding lanes, colorful bazaars, and sacred riverside ghats of Varanasi.', yt: 'a2h6f4zQ8X4', runtime: 140 },
+      { id: 'm23', t: 'Masaan', y: '2015', r: '8.2', g: 'Drama', rel: 'Ganga Ghats Life', o: 'Interconnected lives seeking escape from small-town restrictions along the eternal banks of the sacred Ganges in Varanasi.', yt: 'SK3BJaCgW-8', runtime: 109 },
+      { id: 'm24', t: 'Mukti Bhawan (Hotel Salvation)', y: '2016', r: '7.4', g: 'Comedy, Drama', rel: 'Spiritual Varanasi', o: 'An overworked son accompanies his elderly father to the holy city of Varanasi, finding quiet wisdom and reconciliation.', yt: 'SK3BJaCgW-8', runtime: 99 }
+    ],
+    docs: [
+      { id: 'd10', t: 'Ganga: River of Life', y: '2020', r: '8.3', g: 'Documentary', rel: 'Spiritual Heritage', o: 'Capturing centuries of morning prayers, floating oil lamps, boatmen songs, and sacred rituals along Varanasi ghats.', yt: 'SK3BJaCgW-8', runtime: 48 }
+    ]
+  },
+  darjeeling: {
+    movies: [
+      { id: 'm25', t: 'Barfi!', y: '2012', r: '8.1', g: 'Comedy, Drama', rel: 'Darjeeling Clock Tower & Hills', o: 'A heartwarming story of three young people who learn that love can neither be defined nor contained by society, set in misty Darjeeling.', yt: 'aO1bYukDVQ0', runtime: 151 },
+      { id: 'm26', t: 'Main Hoon Na', y: '2004', r: '7.0', g: 'Action, Comedy', rel: 'St. Pauls School, Darjeeling', o: 'An army major goes undercover as a college student in a prestigious boarding school nestled in the scenic Darjeeling hills.', yt: 'aO1bYukDVQ0', runtime: 179 },
+      { id: 'm27', t: 'The Darjeeling Limited', y: '2007', r: '7.2', g: 'Adventure, Comedy', rel: 'Himalayan Train Journey', o: 'Three estranged brothers meet for a spiritual train journey across vibrant railway stations, temples, and hillside tea gardens.', yt: 'aO1bYukDVQ0', runtime: 91 }
+    ],
+    docs: [
+      { id: 'd11', t: 'The Toy Train: Darjeeling Himalayan Railway', y: '2019', r: '8.1', g: 'Documentary', rel: 'UNESCO World Heritage', o: 'The engineering wonder of the two-foot narrow-gauge railway spiraling from New Jalpaiguri to the heights of Darjeeling.', yt: 'aO1bYukDVQ0', runtime: 46 }
+    ]
+  },
+  default: {
+    movies: [
+      { id: 'm28', t: 'The Secret Life of Walter Mitty', y: '2013', r: '7.3', g: 'Adventure, Comedy', rel: 'Epic World Journey', o: 'A quiet daydreamer breaks free of his routine on an extraordinary global adventure across Iceland, Greenland, and the Himalayas.', p: 'https://image.tmdb.org/t/p/w500/v3e1LdwTXupH9L78eIWCKBjclhJ.jpg', yt: 'HddkUCJYJUY', runtime: 114 },
+      { id: 'm29', t: 'Into the Wild', y: '2007', r: '8.1', g: 'Adventure, Biography', rel: 'True Travel Quest', o: 'A top student gives up all his possessions to hitchhike across North America, seeking freedom in wild open landscapes.', yt: '2LAuzT_x8Ek', runtime: 148 },
+      { id: 'm30', t: 'Under the Tuscan Sun', y: '2003', r: '6.8', g: 'Comedy, Romance', rel: 'Italian Countryside', o: 'A newly divorced writer on a tour of Italy impulsively buys a charming rural villa to start a vibrant new Mediterranean life.', yt: 'T8r53h9_F7U', runtime: 113 },
+      { id: 'm31', t: 'Zindagi Na Milegi Dobara', y: '2011', r: '8.2', g: 'Comedy, Drama', rel: 'Spain Road Trip & Adventure', o: 'Three friends turn a road trip through Spain into an opportunity to face their deepest fears and celebrate living in the moment.', p: 'https://image.tmdb.org/t/p/w500/hKO9O715wYxjkQSEv47giCYcyO8.jpg', yt: 'HddkUCJYJUY', runtime: 155 }
+    ],
+    docs: [
+      { id: 'd12', t: 'Baraka', y: '1992', r: '8.6', g: 'Documentary', rel: 'World Cultural Tapestry', o: 'A transcendent, non-verbal cinematic journey spanning 24 countries, ancient holy sites, tribal dances, and natural wonders.', yt: 'd1m6w9Yp6v8', runtime: 96 },
+      { id: 'd13', t: 'Samsara', y: '2011', r: '8.4', g: 'Documentary', rel: 'Global Sacred Wonders', o: 'Stunning 70mm cinematic masterpiece capturing the cycle of human wonders, nature, and sacred places across the globe.', yt: 'HCkEILshAew', runtime: 102 }
+    ]
+  }
+};
+
+function getLocalMovies(city){
+  const q = String(city || '').toLowerCase();
+  for (const k of Object.keys(LOCAL_MOVIES)) {
+    if (k !== 'default' && q.includes(k)) return LOCAL_MOVIES[k];
+  }
+  return LOCAL_MOVIES['default'];
+}
+
+const TM=()=>(DISCOVER_CONFIG.tmdbProxy||'').replace(/\/+$/,'');
+async function dMv(){
+  const b=TM(), n=DS.data?.nm||'';
+  if(!b){
+    DS.mv={load:true};dDraw();
+    const l=getLocalMovies(n);
+    DS.mv={movies:l.movies, docs:l.docs, curated:true};
+    dDraw();
+    return;
+  }
+  DS.mv={load:true};dDraw();
+  const j=p=>dj(b+p);
+  try{
+    const gm=await j('/genre/movie/list').then(r=>Object.fromEntries(r.genres.map(g=>[g.id,g.name]))).catch(()=>({})),ks=(await j('/search/keyword?query='+enc(n))).results.slice(0,3).map(x=>x.id),kw=ks.length?'&with_keywords='+ks.join('|'):'',none={results:[]};
+    const[mk,dk,ms,ds]=await Promise.all([ks.length?j('/discover/movie?sort_by=popularity.desc&without_genres=99'+kw):none,ks.length?j('/discover/movie?sort_by=popularity.desc&with_genres=99'+kw):none,j('/search/movie?query='+enc(n)),j('/search/movie?query='+enc(n+' documentary'))]);
+    const has=m=>(m.title+' '+(m.overview||'')).toLowerCase().includes(n.toLowerCase()),doc=m=>(m.genre_ids||[]).includes(99),seen=new Set(),cv=(l,rel)=>l.filter(m=>!seen.has(m.id)&&seen.add(m.id)).map(m=>({id:m.id,t:m.title,y:(m.release_date||'').slice(0,4),r:m.vote_average?m.vote_average.toFixed(1):'–',o:m.overview||'',g:(m.genre_ids||[]).slice(0,3).map(x=>gm[x]).filter(Boolean).join(', '),p:m.poster_path?DISCOVER_CONFIG.tmdbImg+m.poster_path:'',rel}));
+    DS.mv={movies:[...cv(mk.results,'TMDB keyword match'),...cv(ms.results.filter(m=>!doc(m)&&has(m)),'Title or description mentions '+n)].slice(0,12),docs:[...cv(dk.results,'TMDB keyword match'),...cv([...ds.results,...ms.results].filter(m=>doc(m)&&has(m)),'Title or description mentions '+n)].slice(0,8)}}catch(e){DS.mv={err:e.message}}dDraw()}
+const mcard=(x,k,i)=>{
+  const p = x.p || (x.yt ? `https://img.youtube.com/vi/${x.yt}/hqdefault.jpg` : '');
+  return `<div class='card gl h'>${p ? `<div style='aspect-ratio:16/10;overflow:hidden;border-radius:12px;margin-bottom:10px;background:#18181B'><img class='gi pos ok' loading='lazy' src='${ea(p)}' alt='' style='width:100%;height:100%;object-fit:cover' onerror='imgE(this)'></div>` : `<div class='nop'>🎬</div>`}<h3 style='margin:8px 0 2px;font-size:15px'>${E(x.t)}</h3><div class='mut'>${x.y||'Year n/a'} · ★ ${x.r}${x.g?' · '+E(x.g):''}</div><div class='pill' style='background:#D4AF37;margin:6px 0'>${E(x.rel)}</div><p class='mut'>${E(clip(x.o,110)||'No description available.')}</p><button class='btn s' onclick='dMd(${k},${i})'>Details</button></div>`;
+};
+function dMvH(){
+  const m=DS.mv,h=`<h3 style='margin-top:0'>Movies that take you there</h3>`;if(!m||m.load)return h+skel(6);
+  if(m.err)return h+emp('⚠️','Could not load movies','The movie service returned an error ('+E(m.err)+'). Check the proxy address in firebase-config.js, that the function is deployed, and that your site address is allowed.');
+  window._mv=[m.movies,m.docs];
+  const note=m.curated
+    ? `<div class='al info' style='margin-bottom:14px;background:#D4AF3722;color:#F5D76E;border:1px solid #D4AF3755;border-radius:10px;padding:9px 13px'><b>🎬 Curated Destination Cinema:</b> Famous movies and documentaries set in or exploring <b>${E(DS.data?.nm||'this destination')}</b>. Pre-stored with official posters & trailers!</div>`
+    : `<p class='mut'>Data from TMDB. A listing means TMDB links the film to this place by keyword or text; it does not confirm that it was filmed here.</p>`;
+  return h+note+(m.movies.length?`<div class='grid a4'>${m.movies.map((x,i)=>mcard(x,0,i)).join('')}</div>`:emp('🎬','No movies found','No films found matching this destination.'))+`<h3 style='margin-top:22px'>Documentaries</h3>`+(m.docs.length?`<div class='grid a4'>${m.docs.map((x,i)=>mcard(x,1,i)).join('')}</div>`:emp('🎞️','No documentaries found','No documentaries found matching this destination.'));
+}
+async function dMd(k,i){
+  const m=window._mv[k][i],b=TM();modal(`<h3>${E(m.t)} ${m.y?'('+m.y+')':''}</h3><div id='mdb'><div class='sp'></div> Loading details…</div>`);let d=null,tr=null;
+  if(b){try{[d,tr]=await Promise.all([dj(b+'/movie/'+m.id),dj(b+'/movie/'+m.id+'/videos').catch(()=>({results:[]}))])}catch(e){}}
+  const v=(tr&&tr.results.find(x=>x.site=='YouTube'&&x.type=='Trailer'))||(m.yt?{key:m.yt}:null),o=$('#mdb');if(!o)return;
+  const p = m.p || (m.yt ? `https://img.youtube.com/vi/${m.yt}/hqdefault.jpg` : '');
+  o.innerHTML=`<div class='fg' style='display:flex;gap:16px;flex-wrap:wrap'>${p?`<div style='width:min(200px,100%);aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:#18181B;flex:none'><img src='${ea(p)}' alt='' style='width:100%;height:100%;object-fit:cover' onerror='imgE(this)'></div>`:''}<div><div class='mut'>★ ${m.r}${d&&d.vote_count?' ('+d.vote_count+' votes)':''}${d&&d.runtime?' · '+d.runtime+' min':m.runtime?' · '+m.runtime+' min':''}${d&&d.release_date?' · '+E(d.release_date):m.y?' · '+m.y:''}</div>${d&&d.genres&&d.genres.length?`<div class='mut'>${d.genres.map(g=>E(g.name)).join(', ')}</div>`:m.g?`<div class='mut'>${E(m.g)}</div>`:''}<div class='pill' style='background:#D4AF37;margin:8px 0'>${E(m.rel)}</div>${d&&d.tagline?`<p><i>${E(d.tagline)}</i></p>`:''}<p>${E((d&&d.overview)||m.o||'No description available.')}</p></div></div><div class='row' style='margin-top:12px;justify-content:flex-start;gap:8px'><button class='btn g' onclick='cl()'>Close</button>${v?`<a class='btn' target='_blank' rel='noopener' href='https://www.youtube.com/watch?v=${ea(v.key)}'>Watch trailer</a>`:''}${m.tmdb?`<a class='btn g' target='_blank' rel='noopener' href='https://www.themoviedb.org/movie/${m.tmdb}'>View on TMDB ↗</a>`:''}</div>`;
+}
+/* ---- lightbox with photo credits ---- */
+let LB=0;function lb(i){LB=i;let e=$('#lb');if(!e){e=document.createElement('div');e.id='lb';e.innerHTML=`<button onclick='lbx()'>✕</button><button class='pv' onclick='lbn(-1)'>‹</button><img id='lbi' alt='' onerror='imgE(this)'><button class='nx' onclick='lbn(1)'>›</button><div id='lbc'></div>`;document.body.appendChild(e);document.addEventListener('keydown',k=>{if(!$('#lb').classList.contains('on'))return;if(k.key=='Escape')lbx();if(k.key=='ArrowRight')lbn(1);if(k.key=='ArrowLeft')lbn(-1)})}e.classList.add('on');lbs()}
+function lbs(){const g=DS.data.gal,x=g[LB];$('#lbi').src=x.full||x.src;$('#lbc').innerHTML=`${LB+1} / ${g.length} · ${E(x.cap)}<br><span class='mut'>${x.by?'Photo: '+E(x.by)+' · ':''}${x.lic?E(x.lic)+' · ':''}${x.link?`<a href='${ea(x.link)}' target='_blank' rel='noopener' style='color:#D4AF37'>Source: Wikimedia Commons ↗</a>`:''}</span>`}
+function lbn(d){const n=DS.data.gal.length;LB=(LB+d+n)%n;lbs()}function lbx(){$('#lb').classList.remove('on')}
+/* ---- page body for the selected destination ---- */
 function dBody(){if(DS.load)return`<div class='card'><div class='skl' style='height:220px;border-radius:14px'></div><div class='skl' style='height:16px;margin:14px 0;border-radius:8px'></div><div class='skl' style='height:16px;width:70%;border-radius:8px'></div></div>`;
-if(DS.err)return emp('🧭',DS.err=='nf'?'We could not find that destination':DS.err=='amb'?'That name is too broad':'Could not load destination data',DS.err=='net'?'Check your internet connection. Discover loads data from Wikipedia, which can be blocked inside a sandboxed preview.':'Try a more specific name, for example Manali or Paris France.');
+if(DS.err)return emp('🧭',DS.err=='nf'?'We could not find that destination':DS.err=='amb'?'That name is too broad':'Could not load destination data',DS.err=='net'?'Wikipedia or Wikimedia could not be reached. Check your internet connection and try again.':'Try a more specific name, for example Manali or Paris France.');
 const c=DS.data;if(!c)return`<h3>Featured destinations</h3><div class='grid a4' style='margin-top:0'>${FEAT.map((f,i)=>`<div class='dest' style='background:linear-gradient(135deg,#3f3a2a,#09090B);min-height:110px' onclick='dF(${i})'><em>${f[1]}</em><b>${f[0]}</b><small>Explore</small></div>`).join('')}</div>`;
 const sec=re=>{const k=Object.keys(c.sec).find(x=>re.test(x));return k?[k,c.sec[k]]:null},saved=(D.wish||[]).some(w=>w.name==c.nm);let b='';
-const gal=(l,off)=>`<div class='gal'>${l.map((g,i)=>`<figure class='skl' onclick='lb(${i+off})'>${im(g.src)}<figcaption>${E(g.cap)}</figcaption></figure>`).join('')}</div>`;
-if(DS.tab=='Overview'){const cl=sec(/climate|weather/i),fx=c.ex.split('. ').slice(1,4);b=`<div class='dcv skl'>${im(c.cv)}<div class='dtt'><h2>${E(c.t)}</h2><div class='mut'>${E(c.ds)}</div></div></div><div class='grid a2'><div class='card gl'><h3>About ${E(c.nm)}</h3><p>${E(c.ex)}</p>${c.url?`<a href='${ea(c.url)}' target='_blank' rel='noopener' style='color:var(--teal)'>Read more on Wikipedia</a>`:''}</div><div class='card gl'><h3>Climate and seasons</h3>${cl?`<p>${E(clip(cl[1],520))}</p>`:`<p class='mut'>No climate section was found for this page.</p>`}${fx.length?`<h3>Facts</h3>${fx.map(x=>`<div class='tl'>${E(x.endsWith('.')?x:x+'.')}</div>`).join('')}`:''}</div></div>${c.gal.length?`<h3 style='margin-top:20px'>Explore through images</h3>${gal(c.gal.slice(0,6),0)}<button class='btn g s' style='margin-top:10px' onclick='dTab(this.dataset.t)' data-t='Images'>See all ${c.gal.length} images</button>`:''}`}
-else if(DS.tab=='Images')b=c.gal.length?`<h3 style='margin-top:0'>Explore through images</h3>${gal(c.gal,0)}<p class='mut'>${c.local?'Offline illustrations, not photographs. Reconnect to load real photos.':'Images from Wikipedia and Wikimedia Commons. Click to enlarge.'}</p>`:emp('🖼️','No images found','This page has no usable images.');
-else if(DS.tab=='Movies')b=dMvH();else if(DS.tab=='Stories')b=dDcH();
-else if(DS.tab=='Places'){window._pl=c.pl;b=c.pl.length?`<h3 style='margin-top:0'>Must-visit places</h3><p class='mut'>Notable places within 10 km of the centre, from Wikipedia.</p><div class='grid a3'>${c.pl.map((p,i)=>`<div class='card gl h'><div class='dcv skl' style='aspect-ratio:16/10;min-height:0;border-radius:14px'>${im(p.img)}</div><h3 style='margin:10px 0 2px'>${E(p.n)}</h3><div class='mut'>${p.d!=null?p.d.toFixed(1)+' km from centre':'Highlight'}</div><p>${E(clip(p.x,190))}</p><div class='row'><button class='btn s' onclick='dIti(${i})'>Add to Itinerary</button>${p.u?`<a class='mut' href='${ea(p.u)}' target='_blank' rel='noopener'>Wikipedia</a>`:''}</div></div>`).join('')}</div>`:emp('📍','No nearby places found','Wikipedia lists no places with coordinates around this destination.')}
-else{const S=[['Culture and traditions',/culture|festival|tradition|religion|people|demograph/i],['Food and cuisine',/cuisine|food|dish/i],['History',/history/i],['Tourism',/tourism|attraction/i]].map(z=>{const s=sec(z[1]);return s?`<div class='card gl'><h3>${z[0]}</h3><p>${E(clip(s[1],700))}</p></div>`:''}).join('');b=S?`<div class='grid a2' style='margin-top:0'>${S}</div>`:emp('🍛','No culture or food section found',`Wikipedia has no matching section for this page. <a href='${ea(c.url)}' target='_blank' rel='noopener'>Open the full article</a>.`)}
+const gal=(l,off)=>`<div class='gal'>${l.map((g,i)=>`<figure class='skl' onclick='lb(${i+off})'>${im(g.src)}<figcaption>${E(clip(g.cap,70))}${g.by?'<br>© '+E(g.by):''}</figcaption></figure>`).join('')}</div>`;
+if(DS.tab=='Overview'){const cl=sec(/climate|weather/i),fx=c.ex.split('. ').slice(1,4);b=`<div class='dcv skl'>${im(c.cv)}<div class='dtt'><h2>${E(c.t)}</h2><div class='mut'>${E(c.ds)}</div></div></div><div class='grid a2'><div class='card gl'><h3>About ${E(c.nm)}</h3><p>${E(c.ex)}</p><div class='row' style='justify-content:flex-start;gap:12px'>${c.url?`<a href='${ea(c.url)}' target='_blank' rel='noopener' style='color:var(--teal)'>Read more on Wikipedia ↗</a>`:''}${c.co?`<a href='https://www.google.com/maps/search/?api=1&query=${c.co.lat},${c.co.lon}' target='_blank' rel='noopener' style='color:var(--teal)'>Open in Google Maps ↗</a>`:''}</div></div><div class='card gl'><h3>Climate and seasons</h3>${cl?`<p>${E(clip(cl[1],520))}</p>`:`<p class='mut'>No climate section was found for this page.</p>`}${fx.length?`<h3>Facts</h3>${fx.map(x=>`<div class='tl'>${E(x.endsWith('.')?x:x+'.')}</div>`).join('')}`:''}</div></div>${c.gal.length?`<h3 style='margin-top:20px'>Explore through images</h3>${gal(c.gal.slice(0,6),0)}<button class='btn g s' style='margin-top:10px' onclick='dTab(this.dataset.t)' data-t='Images'>See all ${c.gal.length} photos</button>`:''}`}
+else if(DS.tab=='Images')b=c.gal.length?`<h3 style='margin-top:0'>Explore through images</h3>${gal(c.gal,0)}<p class='mut'>Photographs from Wikimedia Commons. Click a photo for the creator, licence and source link.</p>`:emp('🖼️',c.ie?'Could not load photos':'No photos found',c.ie?'Wikimedia Commons could not be reached. Try again in a moment.':'Wikimedia Commons has no matching photographs for this destination.');
+else if(DS.tab=='Movies')b=dMvH();
+else if(DS.tab=='Stories'){const s=DS.st,h=sec(/history/i);b=`<h3 style='margin-top:0'>Discover its history and stories</h3>`+(!s||s.load?skel(3):`${h?`<div class='card gl' style='margin-bottom:14px'><h3>${E(h[0])}</h3><p>${E(clip(h[1],900))}</p>${c.url?`<a href='${ea(c.url)}' target='_blank' rel='noopener' style='color:var(--teal)'>Full article on Wikipedia ↗</a>`:''}</div>`:''}`+(s.err?emp('⚠️','Could not load stories','Wikipedia could not be reached ('+E(s.err)+').'):s.list.length?rc(s.list):emp('📜','No related stories found','Wikipedia has no further articles about this destination’s history.')))}
+else if(DS.tab=='Places'){window._pl=c.pl;b=c.pl.length?`<h3 style='margin-top:0'>Must-visit places</h3><p class='mut'>Notable places within 10 km of the centre, from Wikipedia. “Popular” and “Lesser-known” compare Wikipedia page views over the last 30 days.</p><div class='grid a3'>${c.pl.map((p,i)=>`<div class='card gl h'><div class='dcv skl' style='aspect-ratio:16/10;min-height:0;border-radius:14px'>${im(p.img)}</div><h3 style='margin:10px 0 2px'>${E(p.n)}</h3><div class='mut'>${p.d.toFixed(1)} km from centre</div><div class='row' style='justify-content:flex-start;gap:6px;margin:6px 0'><span class='pill' style='background:#D4AF37'>${p.tag}</span>${p.h?`<span class='pill' style='background:#F5D76E'>Historic</span>`:''}</div><p>${E(clip(p.x,190))}</p><div class='row' style='gap:6px'><button class='btn s' onclick='dIti(${i})'>Add to Itinerary</button><a class='btn g s' target='_blank' rel='noopener' href='https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}'>Google Maps ↗</a><a class='mut' href='${ea(p.u)}' target='_blank' rel='noopener'>Wikipedia ↗</a></div></div>`).join('')}</div>`:emp('📍',c.pe?'Could not load places':'No nearby places found',c.pe?'Wikipedia could not be reached. Try again in a moment.':'Wikipedia lists no places with coordinates around this destination.')}
+else{const u=DS.cu,ms=[['Culture and traditions',/culture|festival|tradition|religion|people|demograph/i],['Food and cuisine',/cuisine|food|dish/i]].map(z=>{const s=sec(z[1]);return s?`<div class='card gl'><h3>${z[0]}</h3><p>${E(clip(s[1],600))}</p></div>`:''}).join('');
+b=`<h3 style='margin-top:0'>Local culture, food and traditions</h3>`+(!u||u.load?skel(3):`${ms?`<div class='grid a2' style='margin-top:0;margin-bottom:14px'>${ms}</div>`:''}${u.g.map(x=>`<h3 style='margin-top:18px'>${x[0]}</h3>${rc(x[1])}`).join('')||(ms?'':emp('🎭',u.failed?'Could not load culture information':'No culture articles found',u.failed?'Wikipedia could not be reached. Try again in a moment.':'Wikipedia has no matching articles for this destination.'))}`)}
 return`<div class='row' style='justify-content:flex-start;gap:6px;margin-bottom:12px'>${DT.map(x=>`<button class='btn s ${DS.tab==x?'':'g'}' data-t='${x}' onclick='dTab(this.dataset.t)'>${x}</button>`).join('')}</div>${b}<div class='card gl' style='margin-top:16px'><div class='row'><div><h3 style='margin:0'>Plan your journey to ${E(c.nm)}</h3><span class='mut'>Add it to a trip, start a new one, save it, or check the budget.</span></div><div class='row' style='gap:6px'><button class='btn' onclick='dAdd()'>${ic('map-pin-plus')}Add to My Trip</button><button class='btn g' onclick='dNew()'>${ic('plus')}Create Trip</button><button class='btn g' onclick='dSave()'>${ic('heart')}${saved?'Saved (remove)':'Save Destination'}</button><button class='btn o' onclick='dBud()'>${ic('wallet')}Explore Budget</button></div></div></div>`}
-/* movies */
-async function dMv(){DS.mv={load:true};dDraw();const n=DS.data.nm;try{if(!DISCOVER_CONFIG.tmdbProxy){const k=Object.keys(DEMO).find(x=>DS.data.t.toLowerCase().startsWith(x));DS.mv={demo:true,list:k?DEMO[k].map(m=>({...m,r:'–'})):[]}}
-else{const bs=DISCOVER_CONFIG.tmdbProxy.endsWith('/')?DISCOVER_CONFIG.tmdbProxy.slice(0,-1):DISCOVER_CONFIG.tmdbProxy,j=p=>dj(bs+p);const gm=await j('/genre/movie/list').then(r=>Object.fromEntries(r.genres.map(g=>[g.id,g.name]))).catch(()=>({}));
-const ks=(await j('/search/keyword?query='+enc(n))).results.slice(0,3).map(x=>x.id);let l=[],rel='Keyword match (not verified as a filming or setting location)';if(ks.length)l=(await j('/discover/movie?sort_by=popularity.desc&with_keywords='+ks.join('|'))).results;
-if(!l.length){l=(await j('/search/movie?query='+enc(n))).results;rel='Title or description mentions this place'}
-DS.mv={list:l.slice(0,12).map(m=>({id:m.id,t:m.title,y:(m.release_date||'').slice(0,4),r:m.vote_average?m.vote_average.toFixed(1):'–',o:m.overview||'',g:(m.genre_ids||[]).slice(0,2).map(x=>gm[x]).filter(Boolean).join(', '),p:m.poster_path?DISCOVER_CONFIG.tmdbImg+m.poster_path:'',rel}))}}}catch(e){DS.mv={err:e.message}}dDraw()}
-function dMvH(){const m=DS.mv;if(!m||m.load)return skel(6);if(m.err)return emp('⚠️','Could not load movies','The movie service returned an error ('+E(m.err)+'). Check your TMDB proxy URL.');window._mv=m.list;
-const h=`<h3 style='margin-top:0'>Movies that take you there</h3>${m.demo?`<div class='al warn'><b>Demo mode.</b> A few sample titles for some destinations, not live TMDB data, and without posters or ratings. Add a TMDB proxy URL in DISCOVER_CONFIG for live results.</div>`:''}`;
-return h+(m.list.length?`<div class='grid a4'>${m.list.map((x,i)=>`<div class='card gl h'>${x.p?im(x.p,'pos'):`<div class='nop'>🎬</div>`}<h3 style='margin:10px 0 2px'>${E(x.t)}</h3><div class='mut'>${x.y} · ★ ${x.r}${x.g?' · '+E(x.g):''}</div><div class='pill' style='background:#D4AF37;margin:6px 0'>${E(x.rel)}</div><p class='mut'>${E(clip(x.o,110))}</p><div class='row' style='gap:6px'><button class='btn s' onclick='dTr(${i})'>Trailer</button><button class='btn g s' onclick='dMd(${i})'>Details</button></div></div>`).join('')}</div>`:emp('🎬','No movies found',m.demo?'The demo has sample titles only for Goa, Manali, Paris, Varanasi and Tokyo.':'No related movies were found for this destination.'))}
-async function dTr(i){const m=window._mv[i],w=window.open('about:blank','_blank');let u='https://www.youtube.com/results?search_query='+enc(m.t+' '+m.y+' official trailer');try{if(m.id&&DISCOVER_CONFIG.tmdbProxy){const bs=DISCOVER_CONFIG.tmdbProxy.endsWith('/')?DISCOVER_CONFIG.tmdbProxy.slice(0,-1):DISCOVER_CONFIG.tmdbProxy,v=(await dj(bs+'/movie/'+m.id+'/videos')).results.find(x=>x.site=='YouTube'&&x.type=='Trailer');if(v)u='https://www.youtube.com/watch?v='+v.key}}catch(e){}if(w)w.location=u;else toast('Allow pop-ups to open the trailer')}
-function dMd(i){const m=window._mv[i];modal(`<h3>${E(m.t)} ${m.y?'('+m.y+')':''}</h3><div class='mut'>★ ${m.r}${m.g?' · '+E(m.g):''}</div><div class='pill' style='background:#D4AF37;margin:8px 0'>${E(m.rel)}</div><p>${E(m.o||'No description available.')}</p>${m.id?`<a href='https://www.themoviedb.org/movie/${m.id}' target='_blank' rel='noopener' style='color:var(--teal)'>View on TMDB</a>`:''}<div class='row' style='margin-top:14px'><button class='btn g' onclick='cl()'>Close</button><button class='btn' onclick='dTr(${i})'>Trailer</button></div>`)}
-/* documentaries */
-async function dDc(){DS.dc={load:true};dDraw();const n=DS.data.nm;if(!DISCOVER_CONFIG.youtubeProxy){DS.dc={nokey:true};dDraw();return}
-try{const bs=DISCOVER_CONFIG.youtubeProxy.endsWith('/')?DISCOVER_CONFIG.youtubeProxy.slice(0,-1):DISCOVER_CONFIG.youtubeProxy,s=await dj(bs+'/search?part=snippet&type=video&maxResults=9&videoDuration=long&safeSearch=moderate&q='+enc(n+' documentary history culture')),ids=s.items.map(x=>x.id.videoId).join(',');const du={};if(ids)(await dj(bs+'/videos?part=contentDetails&id='+ids)).items.forEach(x=>du[x.id]=x.contentDetails.duration);
-DS.dc={list:s.items.map(x=>({id:x.id.videoId,t:dec(x.snippet.title),ch:dec(x.snippet.channelTitle),d:dec(x.snippet.description),th:x.snippet.thumbnails?.medium?.url||'',du:du[x.id.videoId]?isoD(du[x.id.videoId]):''}))}}catch(e){DS.dc={err:e.message}}dDraw()}
-function dDcH(){const d=DS.dc,n=DS.data.nm,yt=q=>`https://www.youtube.com/results?search_query=${enc(n+' '+q)}`,h=`<h3 style='margin-top:0'>Discover its history and stories</h3>`;if(!d||d.load)return h+skel(3);
-if(d.nokey)return h+`<div class='card gl'><div class='al info'>Live documentary results need a YouTube proxy (see DISCOVER_CONFIG). No sample videos are shown, since they would not be real. You can still search YouTube directly:</div><div class='row' style='justify-content:flex-start;gap:8px;margin-top:10px'><a class='btn' target='_blank' rel='noopener' href='${yt('history documentary')}'>History documentaries</a><a class='btn g' target='_blank' rel='noopener' href='${yt('culture documentary')}'>Culture documentaries</a><a class='btn g' target='_blank' rel='noopener' href='${yt('travel documentary')}'>Travel documentaries</a></div></div>`;
-if(d.err)return h+emp('⚠️','Could not load documentaries','The video service returned an error ('+E(d.err)+'). Check your YouTube proxy URL.');
-return h+(d.list.length?`<div class='grid a3'>${d.list.map(v=>`<div class='card gl h'><div class='dcv skl' style='aspect-ratio:16/9;min-height:0;border-radius:14px'>${im(v.th)}</div><h3 style='margin:10px 0 2px;font-size:14px'>${E(v.t)}</h3><div class='mut'>${E(v.ch)}${v.du?' · '+v.du:''}</div><p class='mut'>${E(clip(v.d,110))}</p><a class='btn s' target='_blank' rel='noopener' href='https://www.youtube.com/watch?v=${ea(v.id)}'>Watch Documentary</a></div>`).join('')}</div>`:emp('🎥','No documentaries found','Try the YouTube search links instead.'))}
-/* lightbox */
-let LB=0;function lb(i){LB=i;let e=$('#lb');if(!e){e=document.createElement('div');e.id='lb';e.innerHTML=`<button onclick='lbx()'>✕</button><button class='pv' onclick='lbn(-1)'>‹</button><img id='lbi' alt='' onerror='imgE(this)'><button class='nx' onclick='lbn(1)'>›</button><div id='lbc'></div>`;document.body.appendChild(e);document.addEventListener('keydown',k=>{if(!$('#lb').classList.contains('on'))return;if(k.key=='Escape')lbx();if(k.key=='ArrowRight')lbn(1);if(k.key=='ArrowLeft')lbn(-1)})}e.classList.add('on');lbs()}
-function lbs(){const g=DS.data.gal,x=g[LB];$('#lbi').src=x.full||x.src;$('#lbc').textContent=(LB+1)+' / '+g.length+' · '+x.cap}function lbn(d){const n=DS.data.gal.length;LB=(LB+d+n)%n;lbs()}function lbx(){$('#lb').classList.remove('on')}
 /* JourneyJar integration */
 function dNew(){wiz(DS.data.nm)}
 function dBud(){go('home');setTimeout(()=>{const e=$('#h_to');if(e){e.value=DS.data.nm;$('#planner').scrollIntoView({behavior:'smooth'});toast('Set your budget and press Generate Plan')}},80)}
@@ -302,8 +550,8 @@ const LOC=[
 {n:'Kyoto',c:'Japan',e:'⛩️',g:'#7a3a2a,#09090B',d:'Kyoto was the imperial capital of Japan for over a thousand years. It is known for its temples, gardens, geisha districts and traditional wooden houses.',b:'Late March to April for cherry blossom and November for autumn leaves.',a:[['Fushimi Inari Shrine','A mountainside shrine with thousands of red torii gates.'],['Kinkaku-ji','The Golden Pavilion, a Zen temple covered in gold leaf.'],['Arashiyama Bamboo Grove','A towering bamboo path on the western edge of the city.'],['Kiyomizu-dera','A wooden temple with a large terrace over the hillside.']],cu:'Tea ceremony, kaiseki dining and seasonal festivals such as Gion Matsuri keep traditions alive.',f:'Kaiseki, yudofu, matcha sweets and snacks at Nishiki Market.'}];
 const art=(e,l,g)=>{const p=g.split(',');return 'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='640' height='400'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${p[0]}'/><stop offset='1' stop-color='${p[1]}'/></linearGradient></defs><rect width='640' height='400' fill='url(#g)'/><text x='320' y='190' font-size='90' text-anchor='middle'>${e}</text><text x='320' y='290' font-size='30' fill='#F5D76E' text-anchor='middle' font-family='sans-serif'>${l}</text></svg>`)};
 function dLocal(q){const k=q.trim().toLowerCase(),L=LOC.find(x=>{const n=x.n.toLowerCase();return k&&(k==n||k.startsWith(n+' ')||k.startsWith(n+',')||(k.length>2&&n.startsWith(k)))});if(!L)return null;return{t:L.n+', '+L.c,nm:L.n,ds:L.c,ex:L.d,url:'',cv:art(L.e,L.n,L.g),co:null,local:true,gal:L.a.map(a=>({src:art(L.e,a[0],L.g),full:'',cap:a[0]+': '+a[1]})),sec:{'Climate and seasons':'Best time to visit: '+L.b,'Culture and traditions':L.cu,'Food and cuisine':L.f},pl:L.a.map(a=>({n:a[0],x:a[1],img:art(L.e,a[0],L.g),d:null,u:''}))}}
-function dFeat(){return`<h3 style='margin-top:20px'>Try one of these destinations</h3><div class='grid a4' style='margin-top:0'>${LOC.map((f,i)=>`<div class='dest' style='background:linear-gradient(135deg,${f.g});min-height:110px' onclick='dL(${i})'><em>${f.e}</em><b>${f.n}</b><small>${E(f.c)}</small></div>`).join('')}</div>`}
-function dL(i){$('#d_q').value=LOC[i].n;dLoad(LOC[i].n)}
+function dFeat(){return`<h3 style='margin-top:20px'>Try one of these destinations</h3><div class='grid a4' style='margin-top:0'>${FEAT.map((f,i)=>`<div class='dest' style='background:linear-gradient(135deg,#3f3a2a,#09090B);min-height:110px' onclick='dF(${i})'><em>${f[1]}</em><b>${f[0]}</b><small>Explore</small></div>`).join('')}</div>`}
+function dL(i){dF(i)}
 function discPg(){return`<div class='dh'><span class='bd'>JourneyJar Discover</span><h1 style='margin:0 0 8px;font-size:clamp(26px,5vw,44px)'>Explore the destination.<br>Discover its stories.<br><span style='color:#D4AF37'>Plan your journey.</span></h1><div style='position:relative;max-width:560px;margin-top:16px'><div class='row' style='flex-wrap:nowrap'><input id='d_q' placeholder='Search a destination, e.g. Manali, Paris, Tokyo' value='${ea(DS.q)}' oninput='dSug(this.value)' onkeydown='if(event.keyCode==13)dGo()' autocomplete='off'><button class='btn' onclick='dGo()'>${ic('search')}Search</button></div><div id='ds'></div></div>${(D.wish||[]).length?`<div class='row' style='justify-content:flex-start;margin-top:12px;gap:6px'><span class='mut'>Saved:</span>${D.wish.map((w,i)=>`<button class='btn g s' onclick='dWl(${i})'>♥ ${E(w.name)}</button>`).join('')}</div>`:''}${(DS.recent||[]).length?`<div class='row' style='justify-content:flex-start;margin-top:10px;gap:6px'><span class='mut'>Recent:</span>${DS.recent.map((q,i)=>`<button class='btn g s' onclick='dRc(${i})'>${E(q)}</button>`).join('')}</div>`:''}</div><div id='dres' style='margin-top:16px'>${dBody()}</div>`}
 function dRc(i){$('#d_q').value=DS.recent[i];dLoad(DS.recent[i])}
 function stopsCard(t){const s=t.stops||[];return`<div class="card" style="margin-top:14px"><div class="row"><h3 style="margin:0">${ic('map-pinned')} Destinations</h3><span class="mut">${s.length+1} stop(s)</span></div><div class="row" style="justify-content:flex-start;gap:8px;margin:10px 0"><span class="pill" style="background:#D4AF37">1 · ${E(t.to)} (main)</span>${s.map((x,i)=>`<span class="pill" style="background:#F5D76E">${i+2} · ${E(x)} <a style="cursor:pointer;margin-left:6px" onclick="stopRm(${i})" title="Remove">✕</a></span>`).join('')}</div><div class="row" style="flex-wrap:nowrap"><input id="s_n" placeholder="Add another destination, e.g. Kasol" onkeydown="if(event.keyCode==13)stopAdd()"><button class="btn" onclick="stopAdd()">${ic('plus')}Add stop</button></div></div>`}

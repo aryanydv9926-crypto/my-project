@@ -1,3 +1,16 @@
 {
-  "functions": [{ "source": "functions", "codebase": "default", "ignore": ["node_modules", ".git", "*.log"] }]
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.log"
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
+  }
 }

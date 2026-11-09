@@ -8,7 +8,7 @@ const ALLOWED_ORIGINS = [
 ];
 const ROUTES = {
   "/tmdb/": { base: "https://api.themoviedb.org/3", keyParam: "api_key", secret: "TMDB_API_KEY",
-    paths: [/^\/genre\/movie\/list$/, /^\/search\/keyword$/, /^\/discover\/movie$/, /^\/search\/movie$/, /^\/movie\/\d+\/videos$/] },
+    paths: [/^\/genre\/movie\/list$/, /^\/search\/keyword$/, /^\/discover\/movie$/, /^\/search\/movie$/, /^\/movie\/\d{1,9}$/, /^\/movie\/\d{1,9}\/videos$/] },
   "/youtube/": { base: "https://www.googleapis.com/youtube/v3", keyParam: "key", secret: "YOUTUBE_API_KEY",
     paths: [/^\/search$/, /^\/videos$/] },
 };
