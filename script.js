@@ -1,4 +1,4 @@
-window.DISCOVER_CONFIG=window.DISCOVER_CONFIG||{tmdbProxy:'',tmdbImg:'https://image.tmdb.org/t/p/w342',offlineGuide:false};
+window.DISCOVER_CONFIG=window.DISCOVER_CONFIG||{tmdbProxy:'',tmdbKey:'',tmdbImg:'https://image.tmdb.org/t/p/w342',offlineGuide:false};
 let U=null,DB=null,AU=null,unsub=null,AM=0,LOCK=true,ptm;
 const K='journeyjar.v1',$=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),rid=()=>Math.random().toString(36).slice(2,9);
 const SY={INR:'₹',USD:'$',EUR:'€',GBP:'£',AED:'AED ',JPY:'¥'},iso=d=>d.toISOString().slice(0,10),off=n=>iso(new Date(Date.now()+n*864e5)),today=off(0);
@@ -500,9 +500,21 @@ function getLocalMovies(city){
 }
 
 const TM=()=>(DISCOVER_CONFIG.tmdbProxy||'').replace(/\/+$/,'');
+const TK=()=>(DISCOVER_CONFIG.tmdbKey||'').trim();
+async function tmdbGet(path){
+  const b=TM();
+  if(b) return dj(b+path);
+  const k=TK();
+  if(!k) throw new Error('Movie service not connected');
+  const q=path.includes('?')?'&':'?';
+  const url='https://api.themoviedb.org/3'+path+q+'api_key='+encodeURIComponent(k);
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('TMDB '+r.status);
+  return r.json();
+}
 async function dMv(){
-  const b=TM(), n=DS.data?.nm||'';
-  if(!b){
+  const b=TM(), k=TK(), n=DS.data?.nm||'';
+  if(!b&&!k){
     DS.mv={load:true};dDraw();
     const l=getLocalMovies(n);
     DS.mv={movies:l.movies, docs:l.docs, curated:true};
@@ -510,11 +522,11 @@ async function dMv(){
     return;
   }
   DS.mv={load:true};dDraw();
-  const j=p=>dj(b+p);
+  const j=p=>tmdbGet(p);
   try{
     const gm=await j('/genre/movie/list').then(r=>Object.fromEntries(r.genres.map(g=>[g.id,g.name]))).catch(()=>({})),ks=(await j('/search/keyword?query='+enc(n))).results.slice(0,3).map(x=>x.id),kw=ks.length?'&with_keywords='+ks.join('|'):'',none={results:[]};
     const[mk,dk,ms,ds]=await Promise.all([ks.length?j('/discover/movie?sort_by=popularity.desc&without_genres=99'+kw):none,ks.length?j('/discover/movie?sort_by=popularity.desc&with_genres=99'+kw):none,j('/search/movie?query='+enc(n)),j('/search/movie?query='+enc(n+' documentary'))]);
-    const has=m=>(m.title+' '+(m.overview||'')).toLowerCase().includes(n.toLowerCase()),doc=m=>(m.genre_ids||[]).includes(99),seen=new Set(),cv=(l,rel)=>l.filter(m=>!seen.has(m.id)&&seen.add(m.id)).map(m=>({id:m.id,t:m.title,y:(m.release_date||'').slice(0,4),r:m.vote_average?m.vote_average.toFixed(1):'–',o:m.overview||'',g:(m.genre_ids||[]).slice(0,3).map(x=>gm[x]).filter(Boolean).join(', '),p:m.poster_path?DISCOVER_CONFIG.tmdbImg+m.poster_path:'',rel}));
+    const has=m=>(m.title+' '+(m.overview||'')).toLowerCase().includes(n.toLowerCase()),doc=m=>(m.genre_ids||[]).includes(99),seen=new Set(),cv=(l,rel)=>l.filter(m=>!seen.has(m.id)&&seen.add(m.id)).map(m=>({id:m.id,t:m.title,y:(m.release_date||'').slice(0,4),r:m.vote_average?m.vote_average.toFixed(1):'–',o:m.overview||'',g:(m.genre_ids||[]).slice(0,3).map(x=>gm[x]).filter(Boolean).join(', '),p:m.poster_path?DISCOVER_CONFIG.tmdbImg+m.poster_path:'',rel,tmdb:m.id}));
     DS.mv={movies:[...cv(mk.results,'TMDB keyword match'),...cv(ms.results.filter(m=>!doc(m)&&has(m)),'Title or description mentions '+n)].slice(0,12),docs:[...cv(dk.results,'TMDB keyword match'),...cv([...ds.results,...ms.results].filter(m=>doc(m)&&has(m)),'Title or description mentions '+n)].slice(0,8)}}catch(e){DS.mv={err:e.message}}dDraw()}
 const mcard=(x,k,i)=>{
   const p = x.p || (x.yt ? `https://img.youtube.com/vi/${x.yt}/hqdefault.jpg` : '');
@@ -530,8 +542,8 @@ function dMvH(){
   return h+note+(m.movies.length?`<div class='grid a4'>${m.movies.map((x,i)=>mcard(x,0,i)).join('')}</div>`:emp('🎬','No movies found','No films found matching this destination.'))+`<h3 style='margin-top:22px'>Documentaries</h3>`+(m.docs.length?`<div class='grid a4'>${m.docs.map((x,i)=>mcard(x,1,i)).join('')}</div>`:emp('🎞️','No documentaries found','No documentaries found matching this destination.'));
 }
 async function dMd(k,i){
-  const m=window._mv[k][i],b=TM();modal(`<h3>${E(m.t)} ${m.y?'('+m.y+')':''}</h3><div id='mdb'><div class='sp'></div> Loading details…</div>`);let d=null,tr=null;
-  if(b){try{[d,tr]=await Promise.all([dj(b+'/movie/'+m.id),dj(b+'/movie/'+m.id+'/videos').catch(()=>({results:[]}))])}catch(e){}}
+  const m=window._mv[k][i],b=TM(),k2=TK();modal(`<h3>${E(m.t)} ${m.y?'('+m.y+')':''}</h3><div id='mdb'><div class='sp'></div> Loading details…</div>`);let d=null,tr=null;
+  if(b||k2){try{[d,tr]=await Promise.all([tmdbGet('/movie/'+m.id),tmdbGet('/movie/'+m.id+'/videos').catch(()=>({results:[]}))])}catch(e){}}
   const v=(tr&&tr.results.find(x=>x.site=='YouTube'&&x.type=='Trailer'))||(m.yt?{key:m.yt}:null),o=$('#mdb');if(!o)return;
   const p = m.p || (m.yt ? `https://img.youtube.com/vi/${m.yt}/hqdefault.jpg` : '');
   o.innerHTML=`<div class='fg' style='display:flex;gap:16px;flex-wrap:wrap'>${p?`<div style='width:min(200px,100%);aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:#18181B;flex:none'><img src='${ea(p)}' alt='' style='width:100%;height:100%;object-fit:cover' onerror='imgE(this)'></div>`:''}<div><div class='mut'>★ ${m.r}${d&&d.vote_count?' ('+d.vote_count+' votes)':''}${d&&d.runtime?' · '+d.runtime+' min':m.runtime?' · '+m.runtime+' min':''}${d&&d.release_date?' · '+E(d.release_date):m.y?' · '+m.y:''}</div>${d&&d.genres&&d.genres.length?`<div class='mut'>${d.genres.map(g=>E(g.name)).join(', ')}</div>`:m.g?`<div class='mut'>${E(m.g)}</div>`:''}<div class='pill' style='background:#F5B942;margin:8px 0'>${E(m.rel)}</div>${d&&d.tagline?`<p><i>${E(d.tagline)}</i></p>`:''}<p>${E((d&&d.overview)||m.o||'No description available.')}</p></div></div><div class='row' style='margin-top:12px;justify-content:flex-start;gap:8px'><button class='btn g' onclick='cl()'>Close</button>${v?`<a class='btn' target='_blank' rel='noopener' href='https://www.youtube.com/watch?v=${ea(v.key)}'>Watch trailer</a>`:''}${m.tmdb?`<a class='btn g' target='_blank' rel='noopener' href='https://www.themoviedb.org/movie/${m.tmdb}'>View on TMDB ↗</a>`:''}</div>`;

@@ -1,7 +1,6 @@
 // ============================================================
 //  JourneyJar configuration (loaded as an ES module by firebase-init.js)
 //  The Firebase web config is NOT a secret: your Firestore rules protect the data.
-//  NEVER put a TMDB or YouTube API key in this file (see README: backend proxy).
 // ============================================================
 export const firebaseConfig = {
   apiKey: "AIzaSyBHM3s4am4wPY8Bayja6YUEztpSFWghMiE",
@@ -14,15 +13,16 @@ export const firebaseConfig = {
 };
 
 // ============================================================
-//  >>> PASTE YOUR DEPLOYED BACKEND PROXY ADDRESS HERE <<<
-//  After `firebase deploy --only functions` the terminal prints the function URL, for example
-//    https://us-central1-journeyjar-b7f0b.cloudfunctions.net/api
-//  Put that address plus "/tmdb" between the quotes below (no trailing slash):
-//    tmdbProxy: "https://us-central1-journeyjar-b7f0b.cloudfunctions.net/api/tmdb"
-//  The TMDB API key is NEVER put here. It lives only in the Cloud Functions secret TMDB_API_KEY.
+//  TMDB (movies & documentaries in Discover)
+//  Option A — Backend proxy (recommended): set tmdbProxy to your Cloud Function /
+//             Cloudflare Worker URL ending in /tmdb (key stays on the server).
+//  Option B — Direct key (works on GitHub Pages): set tmdbKey below.
+//             WARNING: anyone can view this key in the browser / GitHub.
+//             Prefer a proxy for production.
 // ============================================================
 export const DISCOVER_CONFIG = {
   tmdbProxy: "",
+  tmdbKey: "74d8dd6381340fb36e054ddc8a3593d6",
   tmdbImg: "https://image.tmdb.org/t/p/w342",
-  offlineGuide: false   // false = never show built-in sample content; only live data is used
+  offlineGuide: false
 };
