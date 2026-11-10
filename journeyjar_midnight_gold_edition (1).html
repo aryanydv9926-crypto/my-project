@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JourneyJar - Midnight Gold Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Cinzel Decorative & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Cinzel"', 'serif'],
+                    },
+                    colors: {
+                        midnight: {
+                            950: '#05060A',
+                            900: '#0A0C14',
+                            850: '#101320',
+                            800: '#161A2B',
+                            border: 'rgba(212, 175, 55, 0.18)',
+                        },
+                        gold: {
+                            100: '#FFF6D6',
+                            200: '#FCE79D',
+                            300: '#F9D464',
+                            400: '#E6BD39',
+                            500: '#D4AF37', // Classic Regal Gold
+                            600: '#AA8518',
+                            700: '#80600D',
+                            glow: 'rgba(212, 175, 55, 0.25)',
+                        }
+                    },
+                    animation: {
+                        'gold-pulse': 'goldPulse 4s ease-in-out infinite alternate',
+                        'shimmer': 'shimmer 3s linear infinite',
+                        'float': 'float 5s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        goldPulse: {
+                            '0%': { opacity: '0.3', filter: 'blur(50px)' },
+                            '100%': { opacity: '0.75', filter: 'blur(75px)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-8px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #05060A;
+            color: #E2E8F0;
+            overflow-x: hidden;
+        }
+
+        /* Gold Foil & Glass Styling */
+        .glass-gold-card {
+            background: rgba(16, 19, 32, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 246, 214, 0.1);
+        }
+
+        .glass-gold-panel {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF6D6 0%, #F9D464 30%, #D4AF37 70%, #AA8518 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-gradient-bg {
+            background: linear-gradient(135deg, #FCE79D 0%, #D4AF37 50%, #AA8518 100%);
+        }
+
+        .gold-button {
+            background: linear-gradient(135deg, #FCE79D 0%, #D4AF37 60%, #AA8518 100%);
+            color: #0A0C14;
+            font-weight: 700;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            transition: all 0.3s ease;
+        }
+        .gold-button:hover {
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+            transform: translateY(-1px);
+        }
+
+        /* Luxury Range Input Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(212, 175, 55, 0.12);
+            border-radius: 999px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFF6D6 0%, #D4AF37 100%);
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.8), 0 0 2px #000;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+            border: 2px solid #0A0C14;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        /* Fluid Liquid Fill in Glass Jar */
+        .gold-liquid-fill {
+            transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: linear-gradient(180deg, rgba(249, 212, 100, 0.9) 0%, rgba(212, 175, 55, 0.95) 50%, rgba(128, 96, 13, 0.95) 100%);
+            box-shadow: inset 0 2px 10px rgba(255, 246, 214, 0.6), 0 0 25px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #05060A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D4AF37;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased min-h-screen selection:bg-gold-500 selection:text-black relative">
+
+    <!-- Midnight Gold Ambient Glow Background Spheres -->
+    <div class="fixed top-[-10%] left-[-5%] w-[45vw] h-[45vw] rounded-full bg-gold-600/15 animate-gold-pulse pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-15%] right-[-5%] w-[50vw] h-[50vw] rounded-full bg-gold-500/10 animate-gold-pulse pointer-events-none z-0" style="animation-delay: -2s;"></div>
+    <div class="fixed top-[45%] left-[35%] w-[30vw] h-[30vw] rounded-full bg-gold-400/5 animate-gold-pulse pointer-events-none z-0" style="animation-delay: -3.5s;"></div>
+
+    <div class="relative z-10 flex flex-col min-h-screen">
+        
+        <!-- HEADER -->
+        <header class="w-full border-b border-gold-500/20 glass-gold-panel sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                
+                <!-- Brand Title -->
+                <div class="flex items-center space-x-3.5 cursor-pointer" onclick="resetDefaults()">
+                    <div class="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center shadow-lg shadow-gold-500/20">
+                        <i data-lucide="crown" class="w-6 h-6 text-midnight-950"></i>
+                    </div>
+                    <div>
+                        <span class="font-serif text-2xl font-bold tracking-wide gold-gradient-text">JOURNEYJAR</span>
+                        <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-gold-500/10 text-gold-300 border border-gold-500/30 ml-2">Midnight Gold</span>
+                    </div>
+                </div>
+
+                <!-- Controls Header -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <div class="relative">
+                        <select id="currencySelect" onchange="updateCalculations()" class="bg-midnight-850 text-gold-200 text-xs font-semibold rounded-xl px-3.5 py-2 border border-gold-500/30 focus:outline-none focus:border-gold-400 cursor-pointer">
+                            <option value="$">USD ($)</option>
+                            <option value="€">EUR (€)</option>
+                            <option value="£">GBP (£)</option>
+                            <option value="₹">INR (₹)</option>
+                            <option value="AED ">AED (د.إ)</option>
+                            <option value="¥">JPY (¥)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="sharePlan()" class="glass-gold-panel hover:bg-gold-500/10 text-gold-200 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-2 border border-gold-500/30">
+                        <i data-lucide="share-2" class="w-4 h-4 text-gold-400"></i>
+                        <span class="hidden sm:inline">Export Plan</span>
+                    </button>
+
+                    <button onclick="triggerGoldVault()" class="gold-button px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center space-x-2">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span>Lock Vault</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            
+            <!-- HERO HEADER & DESTINATION PRESETS -->
+            <section class="space-y-4">
+                <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+                    <div>
+                        <div class="text-xs uppercase tracking-widest font-bold text-gold-400 mb-1 flex items-center space-x-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+                            <span>Ultra-Luxury Journey Budgeting</span>
+                        </div>
+                        <h1 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+                            Curate Your <span class="gold-gradient-text">Golden Expedition</span>
+                        </h1>
+                        <p class="text-slate-400 text-xs sm:text-sm mt-1">Calibrate expense allocations, model your wealth velocity, and store reserves in your digital Jar.</p>
+                    </div>
+
+                    <!-- Luxury Presets -->
+                    <div class="flex items-center space-x-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+                        <span class="text-[11px] uppercase font-bold tracking-widest text-gold-500/70 whitespace-nowrap">Presets:</span>
+                        <button onclick="loadPreset('Bora Bora Private Resort', 14500, 10, 8)" class="glass-gold-panel hover:border-gold-400 text-gold-200 text-xs px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition whitespace-nowrap">
+                            <span>🏝️ Bora Bora</span>
+                        </button>
+                        <button onclick="loadPreset('Swiss Alps Chalet', 9800, 7, 5)" class="glass-gold-panel hover:border-gold-400 text-gold-200 text-xs px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition whitespace-nowrap">
+                            <span>⛷️ St. Moritz</span>
+                        </button>
+                        <button onclick="loadPreset('Dubai Penthouse & Desert', 12000, 7, 6)" class="glass-gold-panel hover:border-gold-400 text-gold-200 text-xs px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition whitespace-nowrap">
+                            <span>🏙️ Dubai</span>
+                        </button>
+                        <button onclick="loadPreset('Amalfi Yacht Charter', 16000, 12, 10)" class="glass-gold-panel hover:border-gold-400 text-gold-200 text-xs px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition whitespace-nowrap">
+                            <span>🛥️ Amalfi Yacht</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TRIP TITLE & CONFIG BAR -->
+                <div class="glass-gold-card rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="flex items-center space-x-4 w-full md:w-auto">
+                        <div class="w-14 h-14 rounded-2xl gold-gradient-bg flex items-center justify-center shrink-0 shadow-lg shadow-gold-500/20">
+                            <i data-lucide="compass" class="w-7 h-7 text-midnight-950"></i>
+                        </div>
+                        <div class="space-y-1 w-full sm:w-auto">
+                            <span class="text-[10px] font-bold text-gold-400 uppercase tracking-widest">Expedition Destination</span>
+                            <input type="text" id="destinationName" value="Bora Bora Overwater Bungalow" onchange="updateCalculations()" class="bg-transparent font-serif text-xl sm:text-2xl font-bold text-white focus:outline-none focus:border-b border-gold-400 w-full">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full md:w-auto">
+                        <div class="glass-gold-panel p-3 rounded-2xl border border-gold-500/20">
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase">Duration</span>
+                            <div class="flex items-center space-x-1.5 mt-1">
+                                <input type="number" id="tripDays" value="10" min="1" max="365" oninput="updateCalculations()" class="bg-transparent font-bold text-lg text-gold-300 w-12 focus:outline-none">
+                                <span class="text-xs text-slate-400">days</span>
+                            </div>
+                        </div>
+
+                        <div class="glass-gold-panel p-3 rounded-2xl border border-gold-500/20">
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase">Guests</span>
+                            <div class="flex items-center space-x-1.5 mt-1">
+                                <input type="number" id="travelerCount" value="2" min="1" max="30" oninput="updateCalculations()" class="bg-transparent font-bold text-lg text-gold-300 w-10 focus:outline-none">
+                                <span class="text-xs text-slate-400">guests</span>
+                            </div>
+                        </div>
+
+                        <div class="glass-gold-panel p-3 rounded-2xl border border-gold-500/20 col-span-2 sm:col-span-1">
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase">Stash Horizon</span>
+                            <div class="flex items-center space-x-1.5 mt-1">
+                                <input type="number" id="monthsToSave" value="8" min="1" max="60" oninput="updateCalculations()" class="bg-transparent font-bold text-lg text-gold-300 w-10 focus:outline-none">
+                                <span class="text-xs text-slate-400">months</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- WORKSPACE LAYOUT -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- LEFT COLUMN: ALLOCATION CONTROLS (7 COLS) -->
+                <div class="lg:col-span-7 space-y-6">
+                    
+                    <div class="glass-gold-card rounded-3xl p-6 sm:p-8 space-y-6">
+                        <div class="flex items-center justify-between border-b border-gold-500/20 pb-4">
+                            <div>
+                                <h2 class="font-serif text-lg font-bold text-white flex items-center space-x-2">
+                                    <i data-lucide="sliders" class="w-5 h-5 text-gold-400"></i>
+                                    <span>Expense Allocator Studio</span>
+                                </h2>
+                                <p class="text-xs text-slate-400">Configure your target budget per luxury domain</p>
+                            </div>
+                            <span class="text-[10px] font-bold px-3 py-1 rounded-full bg-gold-500/10 text-gold-300 border border-gold-500/30">
+                                Live Calibrated
+                            </span>
+                        </div>
+
+                        <!-- SLIDERS CONTAINER -->
+                        <div class="space-y-6">
+                            
+                            <!-- First Class Transit -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="flex items-center space-x-2 font-semibold text-slate-200">
+                                        <span class="w-3 h-3 rounded-full gold-gradient-bg"></span>
+                                        <span>First / Business Transit & Flights</span>
+                                    </span>
+                                    <div class="font-bold text-gold-300 font-serif">
+                                        <span class="currencySymbol">$</span><span id="flightsVal">4500</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="flightsSlider" min="0" max="25000" step="100" value="4500" oninput="syncInputs('flights')" class="w-full">
+                                <div class="flex justify-between text-[11px] text-slate-500">
+                                    <span>Calculated per traveler</span>
+                                    <span id="flightsPerPerson" class="text-gold-400/80">$2,250 / guest</span>
+                                </div>
+                            </div>
+
+                            <!-- Luxury Stays -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="flex items-center space-x-2 font-semibold text-slate-200">
+                                        <span class="w-3 h-3 rounded-full bg-gold-400"></span>
+                                        <span>Villas, Suites & Resorts</span>
+                                    </span>
+                                    <div class="font-bold text-gold-300 font-serif">
+                                        <span class="currencySymbol">$</span><span id="staysVal">5500</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="staysSlider" min="0" max="30000" step="100" value="5500" oninput="syncInputs('stays')" class="w-full">
+                                <div class="flex justify-between text-[11px] text-slate-500">
+                                    <span id="staysPerNight" class="text-gold-400/80">$550 / night</span>
+                                    <span>Total accommodation</span>
+                                </div>
+                            </div>
+
+                            <!-- Michelin Dining -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="flex items-center space-x-2 font-semibold text-slate-200">
+                                        <span class="w-3 h-3 rounded-full bg-amber-600"></span>
+                                        <span>Fine Dining, Cellars & Chefs</span>
+                                    </span>
+                                    <div class="font-bold text-gold-300 font-serif">
+                                        <span class="currencySymbol">$</span><span id="foodVal">2500</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="foodSlider" min="0" max="15000" step="50" value="2500" oninput="syncInputs('food')" class="w-full">
+                                <div class="flex justify-between text-[11px] text-slate-500">
+                                    <span id="foodPerDay" class="text-gold-400/80">$250 / day</span>
+                                    <span>Gastronomy budget</span>
+                                </div>
+                            </div>
+
+                            <!-- Private Charters & Excursions -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="flex items-center space-x-2 font-semibold text-slate-200">
+                                        <span class="w-3 h-3 rounded-full bg-yellow-600"></span>
+                                        <span>Private Charters & Experiences</span>
+                                    </span>
+                                    <div class="font-bold text-gold-300 font-serif">
+                                        <span class="currencySymbol">$</span><span id="activitiesVal">1200</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="activitiesSlider" min="0" max="10000" step="50" value="1200" oninput="syncInputs('activities')" class="w-full">
+                                <div class="flex justify-between text-[11px] text-slate-500">
+                                    <span>Tours, yachts, VIP access</span>
+                                </div>
+                            </div>
+
+                            <!-- Contingency Vault -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="flex items-center space-x-2 font-semibold text-slate-200">
+                                        <span class="w-3 h-3 rounded-full bg-amber-800"></span>
+                                        <span>Contingency & Reserve Vault</span>
+                                    </span>
+                                    <div class="font-bold text-gold-300 font-serif">
+                                        <span class="currencySymbol">$</span><span id="bufferVal">800</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="bufferSlider" min="0" max="8000" step="50" value="800" oninput="syncInputs('buffer')" class="w-full">
+                                <div class="flex justify-between text-[11px] text-slate-500">
+                                    <span>Unforeseen luxury buffer</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- MODIFIER BUTTONS -->
+                        <div class="pt-4 border-t border-gold-500/20 grid grid-cols-2 gap-3">
+                            <button onclick="applyRoyalTier()" class="glass-gold-panel hover:bg-gold-500/10 text-xs py-2.5 px-3 rounded-xl border border-gold-500/30 flex items-center justify-center space-x-2 text-gold-200">
+                                <i data-lucide="crown" class="w-4 h-4 text-gold-400"></i>
+                                <span>Royal Tier Upgrade (+30%)</span>
+                            </button>
+                            <button onclick="applyEssentialTier()" class="glass-gold-panel hover:bg-gold-500/10 text-xs py-2.5 px-3 rounded-xl border border-gold-500/30 flex items-center justify-center space-x-2 text-slate-300">
+                                <i data-lucide="shield-check" class="w-4 h-4 text-gold-400"></i>
+                                <span>Refined Essential (-20%)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SAVINGS VELOCITY CARD -->
+                    <div class="glass-gold-card rounded-3xl p-6 sm:p-8 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-serif text-base font-bold text-white flex items-center space-x-2">
+                                    <i data-lucide="trending-up" class="w-5 h-5 text-gold-400"></i>
+                                    <span>Wealth Savings Velocity</span>
+                                </h3>
+                                <p class="text-xs text-slate-400">Pace required to fund your Midnight Gold Jar</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="glass-gold-panel p-4 rounded-2xl border border-gold-500/30 bg-gold-500/5">
+                                <span class="text-[10px] uppercase font-bold text-gold-400 tracking-wider">Daily Target</span>
+                                <div class="text-2xl font-serif font-bold text-white mt-1">
+                                    <span class="currencySymbol">$</span><span id="dailyTarget">52.50</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">Daily allocation</span>
+                            </div>
+
+                            <div class="glass-gold-panel p-4 rounded-2xl border border-gold-500/30 bg-gold-500/5">
+                                <span class="text-[10px] uppercase font-bold text-gold-400 tracking-wider">Weekly Pace</span>
+                                <div class="text-2xl font-serif font-bold text-white mt-1">
+                                    <span class="currencySymbol">$</span><span id="weeklyTarget">367.50</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">Weekly deposit</span>
+                            </div>
+
+                            <div class="glass-gold-panel p-4 rounded-2xl border border-gold-500/30 bg-gold-500/5">
+                                <span class="text-[10px] uppercase font-bold text-gold-400 tracking-wider">Monthly Commitment</span>
+                                <div class="text-2xl font-serif font-bold text-white mt-1">
+                                    <span class="currencySymbol">$</span><span id="monthlyTarget">1,575</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">Monthly contribution</span>
+                            </div>
+                        </div>
+
+                        <!-- Initial Stash Input -->
+                        <div class="pt-2 space-y-3">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-300 font-medium">Currently Stashed in Vault:</span>
+                                <div class="flex items-center space-x-1 font-bold">
+                                    <span class="text-gold-400"><span class="currencySymbol">$</span></span>
+                                    <input type="number" id="currentSaved" value="3000" min="0" oninput="updateCalculations()" class="bg-midnight-850 border border-gold-500/30 rounded-lg px-2.5 py-1 text-right w-28 text-gold-200 focus:outline-none focus:border-gold-400">
+                                </div>
+                            </div>
+                            
+                            <!-- Gold Progress Bar -->
+                            <div class="w-full bg-midnight-950 rounded-full h-3 p-0.5 border border-gold-500/20 overflow-hidden">
+                                <div id="savingsProgressBar" class="h-full rounded-full gold-gradient-bg transition-all duration-700 shadow-md shadow-gold-500/50" style="width: 20%;"></div>
+                            </div>
+
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Jar Vault Status: <strong id="progressPercent" class="text-gold-300">20%</strong></span>
+                                <span>Remaining to Stash: <strong id="remainingAmount" class="text-gold-400">$11,500</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COLUMN: THE MIDNIGHT GOLD JAR & CHARTS (5 COLS) -->
+                <div class="lg:col-span-5 space-y-6">
+                    
+                    <!-- DIGITAL GOLD JAR VISUALIZER -->
+                    <div class="glass-gold-card rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-between relative overflow-hidden text-center min-h-[460px]">
+                        
+                        <div class="w-full flex justify-between items-center mb-2">
+                            <span class="text-[10px] uppercase tracking-widest text-gold-400 font-bold">Midnight Gold Vault</span>
+                            <span id="jarStatusBadge" class="text-[10px] font-bold px-3 py-0.5 rounded-full bg-gold-500/10 text-gold-300 border border-gold-500/30">Reservoir Active</span>
+                        </div>
+
+                        <!-- GRAPHICAL GOLD JAR -->
+                        <div class="relative w-48 h-72 my-4 flex items-end justify-center">
+                            <!-- Metallic Gold Crown Lid -->
+                            <div class="absolute -top-4 w-36 h-6 rounded-lg gold-gradient-bg border border-gold-100/50 shadow-xl z-20 flex items-center justify-center">
+                                <div class="w-24 h-1 bg-midnight-950/40 rounded-full"></div>
+                            </div>
+
+                            <!-- Glass Cylinder Jar -->
+                            <div class="w-full h-full border-2 border-gold-500/40 rounded-b-3xl rounded-t-lg bg-midnight-900/60 backdrop-blur-xl relative overflow-hidden z-10 shadow-2xl flex items-end">
+                                
+                                <!-- Liquid Gold Fill -->
+                                <div id="jarFluid" class="gold-liquid-fill w-full rounded-b-2xl relative" style="height: 35%;">
+                                    <!-- Fluid Ripple Top SVG -->
+                                    <svg class="absolute -top-3 left-0 w-full text-gold-300 fill-current opacity-80" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                        <path d="M0 10 Q25 20 50 10 T100 10 V20 H0 Z"></path>
+                                    </svg>
+                                    <!-- Gold Leaf Shimmer Particles -->
+                                    <div class="absolute w-2 h-2 rounded-full bg-gold-100 bottom-6 left-6 animate-float"></div>
+                                    <div class="absolute w-2.5 h-2.5 rounded-full bg-gold-200 bottom-14 right-10 animate-float" style="animation-delay: -1.8s;"></div>
+                                    <div class="absolute w-1.5 h-1.5 rounded-full bg-white bottom-8 right-5 animate-float" style="animation-delay: -3s;"></div>
+                                </div>
+
+                                <!-- Glass Highlight Reflection -->
+                                <div class="absolute inset-y-0 left-2 w-3 bg-gradient-to-r from-white/20 to-transparent rounded-full pointer-events-none"></div>
+                                
+                                <!-- Center Glass Text Display -->
+                                <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
+                                    <span class="text-[10px] uppercase tracking-widest font-bold text-gold-200/80">Target Fund</span>
+                                    <span class="font-serif text-3xl font-extrabold text-white drop-shadow-lg">
+                                        <span class="currencySymbol">$</span><span id="jarTotalDisplay">15,500</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Target Readiness Date -->
+                        <div class="w-full space-y-1">
+                            <div class="text-xs text-slate-400">
+                                Target Departure Horizon: <span id="targetDateStr" class="text-gold-300 font-bold">Nov 2027</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DONUT ALLOCATION CHART -->
+                    <div class="glass-gold-card rounded-3xl p-6 space-y-6">
+                        <h3 class="font-serif text-sm font-bold text-white flex items-center justify-between">
+                            <span>Portfolio Allocation</span>
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-gold-400"></i>
+                        </h3>
+
+                        <div class="flex items-center justify-center py-2 relative">
+                            <svg class="w-48 h-48 transform -rotate-90" viewBox="0 0 100 100">
+                                <!-- Base Ring -->
+                                <circle cx="50" cy="50" r="40" stroke="rgba(212, 175, 55, 0.1)" stroke-width="10" fill="transparent" />
+                                
+                                <circle id="donutFlights" cx="50" cy="50" r="40" stroke="#FFF6D6" stroke-width="10" fill="transparent"
+                                        stroke-dasharray="251.2" stroke-dashoffset="60" class="transition-all duration-700" />
+                                <circle id="donutStays" cx="50" cy="50" r="40" stroke="#D4AF37" stroke-width="10" fill="transparent"
+                                        stroke-dasharray="251.2" stroke-dashoffset="120" class="transition-all duration-700" />
+                                <circle id="donutFood" cx="50" cy="50" r="40" stroke="#D97706" stroke-width="10" fill="transparent"
+                                        stroke-dasharray="251.2" stroke-dashoffset="180" class="transition-all duration-700" />
+                                <circle id="donutActivities" cx="50" cy="50" r="40" stroke="#CA8A04" stroke-width="10" fill="transparent"
+                                        stroke-dasharray="251.2" stroke-dashoffset="220" class="transition-all duration-700" />
+                                <circle id="donutBuffer" cx="50" cy="50" r="40" stroke="#78350F" stroke-width="10" fill="transparent"
+                                        stroke-dasharray="251.2" stroke-dashoffset="240" class="transition-all duration-700" />
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Per Guest</span>
+                                <span class="font-serif text-lg font-bold text-gold-200"><span class="currencySymbol">$</span><span id="perPersonTotal">7,750</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Legend Items -->
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-gold-100"></span>
+                                <span class="text-slate-300">Transit: <strong id="pctFlights">29%</strong></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-gold-500"></span>
+                                <span class="text-slate-300">Stays: <strong id="pctStays">35%</strong></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+                                <span class="text-slate-300">Dining: <strong id="pctFood">16%</strong></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-600"></span>
+                                <span class="text-slate-300">Charter: <strong id="pctActivities">15%</strong></span>
+                            </div>
+                            <div class="flex items-center space-x-2 col-span-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-900"></span>
+                                <span class="text-slate-300">Contingency: <strong id="pctBuffer">5%</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LUXURY INSIGHT BANNER -->
+                    <div class="glass-gold-panel rounded-3xl p-5 border border-gold-500/30 bg-gradient-to-r from-gold-500/10 to-transparent flex items-start space-x-3.5">
+                        <div class="p-2.5 rounded-xl gold-gradient-bg text-midnight-950 shrink-0">
+                            <i data-lucide="gem" class="w-4 h-4"></i>
+                        </div>
+                        <div class="text-xs space-y-1">
+                            <span class="font-bold text-gold-300 block">Vault Advisory</span>
+                            <p class="text-slate-300 leading-relaxed" id="smartInsightText">
+                                Locking in villa charters 6 months prior guarantees prime availability and preferred luxury concierge rates.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="mt-auto border-t border-gold-500/20 py-6 glass-gold-panel">
+            <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-gold-400 animate-ping"></span>
+                    <span class="text-gold-400/80 font-medium">JourneyJar Midnight Gold Vault &bull; Encrypted Session</span>
+                </div>
+                <div class="text-slate-400">
+                    Precision Luxury Travel Engineering
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        lucide.createIcons();
+
+        let state = {
+            currency: '$',
+            flights: 4500,
+            stays: 5500,
+            food: 2500,
+            activities: 1200,
+            buffer: 800,
+            days: 10,
+            travelers: 2,
+            monthsToSave: 8,
+            currentSaved: 3000
+        };
+
+        function syncStateFromDOM() {
+            state.currency = document.getElementById('currencySelect').value;
+            state.flights = parseFloat(document.getElementById('flightsSlider').value) || 0;
+            state.stays = parseFloat(document.getElementById('staysSlider').value) || 0;
+            state.food = parseFloat(document.getElementById('foodSlider').value) || 0;
+            state.activities = parseFloat(document.getElementById('activitiesSlider').value) || 0;
+            state.buffer = parseFloat(document.getElementById('bufferSlider').value) || 0;
+            
+            state.days = parseInt(document.getElementById('tripDays').value) || 1;
+            state.travelers = parseInt(document.getElementById('travelerCount').value) || 1;
+            state.monthsToSave = parseInt(document.getElementById('monthsToSave').value) || 1;
+            state.currentSaved = parseFloat(document.getElementById('currentSaved').value) || 0;
+        }
+
+        function syncInputs(category) {
+            const val = document.getElementById(category + 'Slider').value;
+            document.getElementById(category + 'Val').innerText = Number(val).toLocaleString();
+            updateCalculations();
+        }
+
+        function updateCalculations() {
+            syncStateFromDOM();
+
+            document.querySelectorAll('.currencySymbol').forEach(el => el.innerText = state.currency);
+
+            const totalBudget = state.flights + state.stays + state.food + state.activities + state.buffer;
+            const perPerson = totalBudget / Math.max(state.travelers, 1);
+            const perNightStays = state.stays / Math.max(state.days, 1);
+            const perDayFood = state.food / Math.max(state.days, 1);
+            const flightsPerPerson = state.flights / Math.max(state.travelers, 1);
+
+            document.getElementById('flightsPerPerson').innerText = `${state.currency}${Math.round(flightsPerPerson).toLocaleString()} / guest`;
+            document.getElementById('staysPerNight').innerText = `${state.currency}${Math.round(perNightStays).toLocaleString()} / night`;
+            document.getElementById('foodPerDay').innerText = `${state.currency}${Math.round(perDayFood).toLocaleString()} / day`;
+
+            document.getElementById('jarTotalDisplay').innerText = totalBudget.toLocaleString();
+            document.getElementById('perPersonTotal').innerText = Math.round(perPerson).toLocaleString();
+
+            const remainingToSave = Math.max(totalBudget - state.currentSaved, 0);
+            const totalDaysToSave = state.monthsToSave * 30.4;
+            const daily = remainingToSave / totalDaysToSave;
+            const weekly = daily * 7;
+            const monthly = remainingToSave / state.monthsToSave;
+
+            document.getElementById('dailyTarget').innerText = daily.toFixed(2);
+            document.getElementById('weeklyTarget').innerText = weekly.toFixed(2);
+            document.getElementById('monthlyTarget').innerText = Math.round(monthly).toLocaleString();
+
+            const progressRatio = totalBudget > 0 ? Math.min((state.currentSaved / totalBudget) * 100, 100) : 0;
+            document.getElementById('savingsProgressBar').style.width = `${progressRatio}%`;
+            document.getElementById('progressPercent').innerText = `${Math.round(progressRatio)}%`;
+            document.getElementById('remainingAmount').innerText = `${state.currency}${Math.round(remainingToSave).toLocaleString()}`;
+            
+            const fluidElem = document.getElementById('jarFluid');
+            fluidElem.style.height = `${Math.max(progressRatio, 10)}%`;
+
+            updateDonutChart(totalBudget);
+
+            const targetDate = new Date();
+            targetDate.setMonth(targetDate.getMonth() + state.monthsToSave);
+            document.getElementById('targetDateStr').innerText = targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+            generateSmartInsight(totalBudget);
+        }
+
+        function updateDonutChart(total) {
+            if (total === 0) return;
+            const circumference = 2 * Math.PI * 40;
+            
+            const categories = [
+                { id: 'donutFlights', val: state.flights, pctId: 'pctFlights' },
+                { id: 'donutStays', val: state.stays, pctId: 'pctStays' },
+                { id: 'donutFood', val: state.food, pctId: 'pctFood' },
+                { id: 'donutActivities', val: state.activities, pctId: 'pctActivities' },
+                { id: 'donutBuffer', val: state.buffer, pctId: 'pctBuffer' }
+            ];
+
+            let cumulativeOffset = 0;
+
+            categories.forEach(cat => {
+                const fraction = cat.val / total;
+                const strokeDash = fraction * circumference;
+                const elem = document.getElementById(cat.id);
+                
+                elem.style.strokeDasharray = `${strokeDash} ${circumference - strokeDash}`;
+                elem.style.strokeDashoffset = -cumulativeOffset;
+                
+                cumulativeOffset += strokeDash;
+                document.getElementById(cat.pctId).innerText = `${Math.round(fraction * 100)}%`;
+            });
+        }
+
+        function generateSmartInsight(total) {
+            const insights = [
+                `Reserving luxury suites ${state.monthsToSave} months in advance yields priority room upgrades and complimentary wellness credits.`,
+                `Your contingency reserve represents ${Math.round((state.buffer / total) * 100)}% of your vault. Excellent risk mitigation!`,
+                `Allocating ${state.currency}${Math.round(state.flights / state.travelers)} per person ensures direct first-class routing.`,
+                `Pacing your stash at ${state.currency}${Math.round(state.flights / 10)} daily guarantees hitting your goal smoothly.`
+            ];
+            const randomIndex = Math.floor((state.flights + state.stays) % insights.length);
+            document.getElementById('smartInsightText').innerText = insights[randomIndex];
+        }
+
+        function loadPreset(name, budget, days, months) {
+            document.getElementById('destinationName').value = name;
+            document.getElementById('tripDays').value = days;
+            document.getElementById('monthsToSave').value = months;
+
+            document.getElementById('flightsSlider').value = Math.round(budget * 0.30);
+            document.getElementById('staysSlider').value = Math.round(budget * 0.38);
+            document.getElementById('foodSlider').value = Math.round(budget * 0.18);
+            document.getElementById('activitiesSlider').value = Math.round(budget * 0.09);
+            document.getElementById('bufferSlider').value = Math.round(budget * 0.05);
+
+            ['flights', 'stays', 'food', 'activities', 'buffer'].forEach(cat => {
+                document.getElementById(cat + 'Val').innerText = Number(document.getElementById(cat + 'Slider').value).toLocaleString();
+            });
+
+            updateCalculations();
+            showToast(`Loaded Preset: ${name}`);
+        }
+
+        function applyRoyalTier() {
+            ['flights', 'stays', 'food', 'activities', 'buffer'].forEach(cat => {
+                const slider = document.getElementById(cat + 'Slider');
+                slider.value = Math.round(parseFloat(slider.value) * 1.30);
+                document.getElementById(cat + 'Val').innerText = Number(slider.value).toLocaleString();
+            });
+            updateCalculations();
+            showToast('Royal Tier Upgrade (+30%)');
+        }
+
+        function applyEssentialTier() {
+            ['flights', 'stays', 'food', 'activities', 'buffer'].forEach(cat => {
+                const slider = document.getElementById(cat + 'Slider');
+                slider.value = Math.round(parseFloat(slider.value) * 0.80);
+                document.getElementById(cat + 'Val').innerText = Number(slider.value).toLocaleString();
+            });
+            updateCalculations();
+            showToast('Refined Essential Tier (-20%)');
+        }
+
+        function resetDefaults() {
+            loadPreset('Bora Bora Overwater Bungalow', 14500, 10, 8);
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'glass-gold-card text-gold-200 text-xs px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto border border-gold-500/40';
+            toast.innerHTML = `
+                <i data-lucide="check-circle" class="w-4 h-4 text-gold-400"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function triggerGoldVault() {
+            showToast("Midnight Gold Vault Secured & Export Ready.");
+            const fluid = document.getElementById('jarFluid');
+            fluid.style.transform = 'scale(1.04)';
+            setTimeout(() => fluid.style.transform = 'scale(1)', 400);
+        }
+
+        function sharePlan() {
+            const dest = document.getElementById('destinationName').value;
+            const total = document.getElementById('jarTotalDisplay').innerText;
+            const text = `👑 My Midnight Gold Expedition Plan for ${dest}: Total ${state.currency}${total} with JourneyJar Studio!`;
+            
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('Trip itinerary copied to clipboard!');
+        }
+
+        window.onload = function() {
+            updateCalculations();
+        };
+    </script>
+</body>
+</html>
