@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn()      { return request.auth != null; }
+    function isOwner(uid)    { return signedIn() && request.auth.uid == uid; }
+
+    // ---- Travel Vault metadata: users/{uid}/travelVault/{docId}
+    function validVaultDoc(uid) {
+      let d = request.resource.data;
+      return d.keys().hasAll(['fileName','category','mimeType','size','storagePath','encrypted','uploadedAt'])
+        && d.keys().hasOnly(['fileName','category','mimeType','size','storagePath','encrypted','uploadedAt','iv'])
+        && d.fileName is string && d.fileName.size() > 0 && d.fileName.size() <= 200
+        && d.category in ['Passport','ID Proof','Visa','Tickets','Hotel','Insurance','Other']
+        && d.mimeType in ['application/pdf','image/jpeg','image/png']
+        && d.size is int && d.size > 0 && d.size <= 10485760
+        && d.encrypted is bool
+        && (d.encrypted == false || (d.iv is string && d.iv.size() <= 32))
+        && d.storagePath == 'users/' + uid + '/travelVault/' + request.resource.id;
+    }
+    match /users/{uid}/travelVault/{docId} {
+      allow read:   if isOwner(uid);
+      allow create: if isOwner(uid) && validVaultDoc(uid) && request.resource.data.uploadedAt == request.time;
+      allow update: if isOwner(uid) && validVaultDoc(uid)
+                    && request.resource.data.storagePath == resource.data.storagePath
+                    && request.resource.data.uploadedAt  == resource.data.uploadedAt;
+      allow delete: if isOwner(uid);
+    }
+
+    // ---- Vault encryption config (salt + verifier only; NEVER the passphrase or key)
+    match /users/{uid}/vaultConfig/{id} {
+      allow read:   if isOwner(uid);
+      allow create: if isOwner(uid) && id == 'main'
+                    && request.resource.data.keys().hasOnly(['salt','iterations','verifierIv','verifier','version','createdAt']);
+      allow update, delete: if false;   // immutable: prevents tampering/downgrade
+    }
+
+    // ---- MERGE POINT: keep your EXISTING rules for trips/budgets/profile below.
+    // Example of the safe pattern for any other per-user data:
+    match /users/{uid}/{other=**} {
+      allow read, write: if isOwner(uid);
+    }
+    // (more specific matches above take precedence for validation; remove the catch-all
+    //  if your existing rules already cover your other collections.)
+  }
+}
