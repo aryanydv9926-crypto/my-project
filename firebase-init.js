@@ -7,6 +7,8 @@
 //    users/{uid}/discoveries/{slug}  saved destinations
 //    users/{uid}/searches/{slug}     recent searches
 //  Trips, budgets and expenses keep syncing in users/{uid}.
+//  Trip Sync (collaborative rooms) uses top-level collections:
+//    trips/{tripId}/...  and  tripInvites/{code}
 // ============================================================
 const SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
 const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "x";
@@ -25,18 +27,41 @@ try {
       import(SDK + "firebase-auth.js"),
       import(SDK + "firebase-firestore.js"),
     ]);
-    const app = A.getApps().length ? A.getApp() : A.initializeApp(firebaseConfig); // initialise once
+    const app = A.getApps().length ? A.getApp() : A.initializeApp(firebaseConfig);
     const auth = Au.getAuth(app);
     let db;
     try {
       db = Fs.initializeFirestore(app, { localCache: Fs.persistentLocalCache({ tabManager: Fs.persistentMultipleTabManager() }) });
     } catch (e) {
-      db = Fs.getFirestore(app); // already initialised, or persistence unavailable
+      db = Fs.getFirestore(app);
     }
     const col = (uid, name) => Fs.collection(db, "users", uid, name);
+
+    const FS = {
+      db,
+      doc: Fs.doc,
+      collection: Fs.collection,
+      setDoc: Fs.setDoc,
+      getDoc: Fs.getDoc,
+      getDocs: Fs.getDocs,
+      addDoc: Fs.addDoc,
+      updateDoc: Fs.updateDoc,
+      deleteDoc: Fs.deleteDoc,
+      onSnapshot: Fs.onSnapshot,
+      query: Fs.query,
+      where: Fs.where,
+      orderBy: Fs.orderBy,
+      limit: Fs.limit,
+      serverTimestamp: Fs.serverTimestamp,
+      writeBatch: Fs.writeBatch,
+      Timestamp: Fs.Timestamp,
+      arrayUnion: Fs.arrayUnion,
+      arrayRemove: Fs.arrayRemove,
+      increment: Fs.increment,
+    };
+
     ready({
       ok: true, sdk: true, missing: [],
-      // ---- Authentication
       onAuth: (cb) => Au.onAuthStateChanged(auth, cb, () => cb(null)),
       signIn: (email, pw) => Au.signInWithEmailAndPassword(auth, email, pw),
       signUp: async (email, pw, name) => {
@@ -48,10 +73,9 @@ try {
       google: () => Au.signInWithPopup(auth, new Au.GoogleAuthProvider()),
       signOut: () => Au.signOut(auth),
       setName: (name) => auth.currentUser ? Au.updateProfile(auth.currentUser, { displayName: name }) : Promise.resolve(),
-      // ---- User document (trips, budgets, expenses...)
+      currentUser: () => auth.currentUser,
       saveUser: (uid, data) => Fs.setDoc(Fs.doc(db, "users", uid), data),
       watchUser: (uid, cb, err) => Fs.onSnapshot(Fs.doc(db, "users", uid), cb, err),
-      // ---- Discovery data
       saveDiscovery: (uid, d) => Fs.setDoc(Fs.doc(col(uid, "discoveries"), slug(d.name)), {
         name: String(d.name).slice(0, 100), title: String(d.title || d.name).slice(0, 160),
         desc: String(d.desc || "").slice(0, 300), summary: String(d.summary || "").slice(0, 700),
@@ -68,6 +92,7 @@ try {
         const s = await Fs.getDocs(Fs.query(col(uid, "searches"), Fs.orderBy("at", "desc"), Fs.limit(8)));
         return s.docs.map((x) => x.data().q);
       },
+      FS,
     });
   }
 } catch (e) {

@@ -1790,3 +1790,194 @@ aside .lg, aside .tg {
   }
   .dash-up-body { padding: 18px; }
 }
+
+/* ============================================================
+   Trip Sync – Collaborative rooms
+   ============================================================ */
+.ts-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.ts-card-action {
+  cursor: pointer;
+  transition: border-color .2s, transform .15s;
+  text-align: center;
+  padding: 28px 20px;
+}
+.ts-card-action:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+.ts-icon-wrap {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 14px;
+  background: rgba(245,185,66,.12);
+  color: var(--gold);
+  display: grid;
+  place-items: center;
+}
+.ts-icon-wrap i { width: 22px; height: 22px; }
+.ts-room-list { display: flex; flex-direction: column; gap: 6px; }
+.ts-room-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.ts-room-row:hover { background: rgba(245,185,66,.07); }
+.ts-room-icon {
+  width: 40px; height: 40px;
+  border-radius: 11px;
+  background: rgba(245,185,66,.12);
+  color: var(--gold);
+  display: grid; place-items: center;
+  flex: none;
+}
+.ts-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--mut);
+}
+.ts-empty i { width: 36px; height: 36px; }
+
+/* Room header + tabs */
+.ts-room-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.ts-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 16px;
+  scrollbar-width: none;
+}
+.ts-tabs::-webkit-scrollbar { display: none; }
+.ts-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--mut);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: .15s;
+}
+.ts-tab i { width: 15px; height: 15px; }
+.ts-tab:hover { color: var(--tx); background: rgba(255,255,255,.04); }
+.ts-tab.on {
+  background: rgba(245,185,66,.14);
+  color: var(--gold);
+  border-color: rgba(245,185,66,.35);
+}
+.ts-panel { min-height: 200px; }
+.ts-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+}
+
+/* Items & members */
+.ts-list { display: flex; flex-direction: column; gap: 10px; }
+.ts-item { margin: 0; }
+.ts-item-actions {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+.ts-member-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.ts-member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  font-size: 13px;
+}
+.ts-av {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+.ts-av-letter {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #F5B942, #B8860B);
+  color: #0D1726;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ts-owner-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(245,185,66,.2);
+  color: var(--gold);
+  margin-left: 4px;
+}
+
+/* Activity feed */
+.ts-act-list { display: flex; flex-direction: column; gap: 0; }
+.ts-act-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.ts-act-item:last-child { border-bottom: none; }
+.ts-act-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  margin-top: 6px;
+  flex: none;
+  box-shadow: 0 0 0 3px rgba(245,185,66,.2);
+}
+
+/* Invite box */
+.ts-invite-box {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ts-invite-box input {
+  flex: 1;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .ts-hero { flex-direction: column; }
+  .ts-tab span { display: none; }
+  .ts-tab { padding: 8px 12px; }
+  .ts-room-header { gap: 8px; }
+}
