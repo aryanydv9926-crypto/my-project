@@ -22,7 +22,7 @@ export const firebaseConfig = {
 // ============================================================
 export const DISCOVER_CONFIG = {
   tmdbProxy: "",
-  tmdbKey: "74d8dd6381340fb36e054ddc8a3593d6",
+  tmdbKey: "",                    // ← Empty the key
   tmdbImg: "https://image.tmdb.org/t/p/w342",
   offlineGuide: false
 };
