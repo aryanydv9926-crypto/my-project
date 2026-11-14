@@ -1,0 +1,111 @@
+JOURNEYJAR - DATABASE SETUP (do these 5 steps in the Firebase console, project: journeyjar-b7f0b)
+Open: https://console.firebase.google.com  ->  your project "journeyjar-b7f0b"
+
+STEP 1 - Turn on login
+  Build > Authentication > Get started > Sign-in method
+  Enable "Email/Password" and "Google". Save.
+  Then: Authentication > Settings > Authorized domains > Add domain:
+      aryanydv9926-crypto.github.io
+
+STEP 2 - Create the database (Firestore)
+  Build > Firestore Database > Create database > pick a location > Start in PRODUCTION mode > Enable.
+
+STEP 3 - Paste the database rules
+  Firestore Database > "Rules" tab > delete everything > paste ALL of this > click "Publish":
+
+---------------- COPY FROM HERE ----------------
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      // Trips, budgets, expenses: only the signed-in owner
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Discovery: saved destinations
+      match /discoveries/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.name is string && request.resource.data.name.size() <= 100;
+      }
+      // Discovery: recent searches
+      match /searches/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.q is string && request.resource.data.q.size() <= 100;
+      }
+
+      // Travel Vault: file records (the files themselves are in Firebase Storage)
+      match /vault/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['name','cat','tripId','type','size','path','createdAt','updatedAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 200
+          && request.resource.data.cat in ['Train Tickets','Flight Tickets','Hotel Bookings','Identity Documents','Visa','Travel Insurance','Other Documents']
+          && request.resource.data.tripId is string && request.resource.data.tripId.size() <= 40
+          && request.resource.data.type in ['application/pdf','image/jpeg','image/png']
+          && request.resource.data.size is int && request.resource.data.size > 0 && request.resource.data.size <= 26214400
+          && request.resource.data.path.matches('users/' + uid + '/vault/' + id + '/[A-Za-z0-9._-]+')
+          && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+        // only renaming is allowed after creation
+        allow update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','updatedAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 200
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      // Travel Vault: notes
+      match /vaultNotes/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['title','body','tripId','createdAt','updatedAt'])
+          && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+          && request.resource.data.body is string && request.resource.data.body.size() <= 5000
+          && request.resource.data.tripId is string && request.resource.data.tripId.size() <= 40
+          && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+        allow update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','body','updatedAt'])
+          && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+          && request.resource.data.body is string && request.resource.data.body.size() <= 5000
+          && request.resource.data.updatedAt == request.time;
+      }
+    }
+  }
+}
+---------------- COPY UNTIL HERE ---------------
+
+STEP 4 - Turn on file storage (for the Travel Vault)
+  Build > Storage > Get started > Next > choose location > Done.
+  (If Firebase asks you to upgrade to the "Blaze" plan, that is normal for Storage. Personal use stays in the free quota. Set a budget alert.)
+  Storage > "Rules" tab > delete everything > paste ALL of this > click "Publish":
+
+---------------- COPY FROM HERE ----------------
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Each user can only touch files under their own folder: users/{uid}/vault/{docId}/{fileName}
+    match /users/{uid}/vault/{docId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.size > 0 && request.resource.size <= 25 * 1024 * 1024
+        && request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png'];
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // everything else is closed
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+---------------- COPY UNTIL HERE ---------------
+
+STEP 5 - Upload the website files to GitHub
+  Upload ALL files from the zip to the main folder of your repository "my-project":
+  index.html, style.css, script.js, firebase-config.js, firebase-init.js
+  (firebase-init.js and firebase-config.js are REQUIRED. Without them login and the vault do nothing.)
+  Wait 1-2 minutes, open the site, press Ctrl+Shift+R.
+
+IF "NOTHING HAPPENS"
+  1. Open your site, press F12, click "Console". Send me the red error text.
+  2. Most common causes: a file from Step 5 is missing, rules are not published, Storage is not enabled,
+     or your github.io address is not in Authorized domains.
+  3. The vault only works after you log in. When it works, the chip says "Cloud Synced".
