@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      // Trips, budgets, expenses: only the signed-in owner
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Discovery: saved destinations
+      match /discoveries/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.name is string && request.resource.data.name.size() <= 100;
+      }
+      // Discovery: recent searches
+      match /searches/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.q is string && request.resource.data.q.size() <= 100;
+      }
+
+      // Travel Vault: file records (the files themselves are in Firebase Storage)
+      match /vault/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['name','cat','tripId','type','size','path','createdAt','updatedAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 200
+          && request.resource.data.cat in ['Train Tickets','Flight Tickets','Hotel Bookings','Identity Documents','Visa','Travel Insurance','Other Documents']
+          && request.resource.data.tripId is string && request.resource.data.tripId.size() <= 40
+          && request.resource.data.type in ['application/pdf','image/jpeg','image/png']
+          && request.resource.data.size is int && request.resource.data.size > 0 && request.resource.data.size <= 26214400
+          && request.resource.data.path.matches('users/' + uid + '/vault/' + id + '/[A-Za-z0-9._-]+')
+          && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+        // only renaming is allowed after creation
+        allow update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','updatedAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 200
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      // Travel Vault: notes
+      match /vaultNotes/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['title','body','tripId','createdAt','updatedAt'])
+          && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+          && request.resource.data.body is string && request.resource.data.body.size() <= 5000
+          && request.resource.data.tripId is string && request.resource.data.tripId.size() <= 40
+          && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+        allow update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','body','updatedAt'])
+          && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+          && request.resource.data.body is string && request.resource.data.body.size() <= 5000
+          && request.resource.data.updatedAt == request.time;
+      }
+    }
+  }
+}

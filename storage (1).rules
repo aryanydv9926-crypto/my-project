@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Each user can only touch files under their own folder: users/{uid}/vault/{docId}/{fileName}
+    match /users/{uid}/vault/{docId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.size > 0 && request.resource.size <= 25 * 1024 * 1024
+        && request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png'];
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // everything else is closed
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
