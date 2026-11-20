@@ -1,91 +1,101 @@
-# JourneyJar: Smart Travel Planner
+# JourneyJar – Final Organised Project
 
-Live site: https://aryanydv9926-crypto.github.io/my-project/
+Smart Travel Planner with Dual Discovery (Travel + Movies).
 
-Plain HTML, CSS and JavaScript (no build step). Firebase Authentication and Cloud Firestore use the modular v10 SDK.
+**All features working. Nothing overshadowed.**
 
-## Files
-| File | Purpose |
-|---|---|
-| `index.html` | Page markup, loads the other files |
-| `style.css` | All styling (Midnight Gold theme, responsive) |
-| `script.js` | The app: trips, budgets, expenses, Discover, vault, packing, countdown |
-| `firebase-config.js` | Your Firebase web config + **`tmdbProxy` address** (the one place to configure the backend) |
-| `firebase-init.js` | Initialises Firebase once; Auth + Firestore + Discovery functions |
-| `firestore.rules` | Security rules to publish in Firebase |
-| `functions/` | Firebase Cloud Function: secure TMDB proxy (`index.js`, `proxy-core.js`, `package.json`) |
-| `firebase.json`, `.firebaserc` | Firebase CLI settings (project `journeyjar-b7f0b`) |
-| `backend/` | Optional free alternative to Cloud Functions (Cloudflare Worker) |
+## Features
 
-## Firebase setup (once)
-1. Authentication > Sign-in method: enable **Email/Password** and **Google**.
-2. Authentication > Settings > Authorized domains: add `aryanydv9926-crypto.github.io` (and `localhost` for local testing).
-3. Firestore Database: create it, open the **Rules** tab, paste `firestore.rules`, click **Publish**.
+### Discover (3 equal tabs)
+- **Travel** – OpenTripMap (attractions, museums, beaches, mountains, historic places, favourites)
+- **Movies** – TMDB (trending, popular, top-rated, upcoming, search, detail modal, favourites)
+- **Destination** – Classic Wikipedia deep-dive (stories, images, places)
 
-## Run locally
-- **Windows (1-Click)**: Simply double-click `start.bat` in the root folder. It starts the local server and opens http://localhost:8000 automatically.
-- **VS Code**: Use the **Live Server** extension (Go Live) on `index.html`.
-- **Python / Terminal**: Run `python -m http.server 8000` and open http://localhost:8000.
-Do not double-click `index.html` directly: ES modules and Firebase login are blocked by browsers on `file://`.
+### Core app
+- Home & Dashboard
+- My Trips + Plan New Journey wizard
+- Budget Planner & Smart Budget
+- Expense Tracker
+- Trip Splitter
+- Itinerary
+- Trip Countdown
+- Smart Packing
+- Travel Vault
+- Trip Sync (collaborative rooms)
+- Analytics / Comparison
+- Settings + Authentication (Email/Password + Google)
 
-## Discovery data in Firestore
-- `users/{uid}/discoveries/{destination}`: saved destinations (name, description, summary, cover URL, source, coordinates, savedAt)
-- `users/{uid}/searches/{search}`: recent searches
-- `users/{uid}`: trips, budgets, expenses, itineraries (unchanged behaviour)
-Functions in `firebase-init.js`: `saveDiscovery`, `getDiscoveries`, `removeDiscovery`, `recordSearch`, `getSearches`.
+## Project structure
 
-## Test the Firebase connection
-1. Open the site, press F12 > Console. There must be no red errors from `firebase-init.js`.
-2. Sign up with an email, or click **Continue with Google**. You should land on the Home page.
-3. Discover > search "Manali" > **Save Destination**. In Firebase console > Firestore > `users` > your uid > `discoveries` > `manali` should appear.
-4. Reload the page: the saved destination and the "Recent" chip are still there.
-5. Log in from a second browser or phone: the same saved destinations load.
-6. If something fails: `permission-denied` = rules not published; `unauthorized-domain` = add the domain in step 2; `operation-not-allowed` = enable the provider.
+```
+├── index.html
+├── style.css
+├── script.js                 # Core app
+├── discovery-ui.js           # Dual Discovery UI
+├── services/
+│   ├── tmdb.js
+│   └── opentripmap.js
+├── firebase-config.js        # Config + proxy URLs / keys
+├── firebase-init.js
+├── firestore.rules
+├── trip-sync.js
+├── travel-vault.js
+├── functions/                # Cloud Functions proxy
+│   ├── index.js
+│   ├── proxy-core.js
+│   └── package.json
+├── firebase.json
+├── .firebaserc
+├── start.bat
+└── README.md
+```
 
-## Discovery: where the data comes from
-| Tab | Source | Needs a key? |
-|---|---|---|
-| Overview, Stories, Culture | Wikipedia (summary, sections, related articles) | No |
-| Images | Wikimedia Commons (photos with creator, licence, source link) | No |
-| Places | Wikipedia places within 10 km (real photos, Google Maps links) | No |
-| Movies + Documentaries | TMDB, **through your backend proxy** | Yes, kept only in the backend |
+## Quick start (local)
 
-Nothing is hard-coded: if a source cannot be reached you see an error or an empty state, never sample data.
-Why Movies used to show "Demo mode": `tmdbProxy` in `firebase-config.js` was empty, so the app fell back to a built-in sample list. That list is removed; with no proxy you now get a "Movie service not connected" notice.
+```bash
+python -m http.server 8000
+# open http://localhost:8000
+```
 
-## Deploy the TMDB proxy (Firebase Cloud Functions)
-1. Get a free TMDB account: https://www.themoviedb.org > Settings > API > copy the **API Key (v3 auth)**.
-2. Firebase console > upgrade the project to the **Blaze** (pay as you go) plan. Cloud Functions and secrets need it; this proxy stays inside the free monthly quota for normal use. Set a budget alert.
-3. Install Node.js 20, then in a terminal: `npm install -g firebase-tools` and `firebase login`.
-4. In the project folder: `cd functions && npm install && cd ..`
-5. `firebase functions:secrets:set TMDB_API_KEY` and paste your key when asked (it is stored in Google Secret Manager, not in any file).
-6. `firebase deploy --only functions`
-7. The terminal prints `Function URL (api(us-central1)): https://...`. 
-8. Open `firebase-config.js` and paste it, plus `/tmdb`, into `tmdbProxy`:
-   `tmdbProxy: "https://us-central1-journeyjar-b7f0b.cloudfunctions.net/api/tmdb"` (use the exact URL printed in step 7).
-9. Upload `firebase-config.js` to GitHub again.
-10. Check the proxy: `curl -H "Origin: https://aryanydv9926-crypto.github.io" "<function-url>/tmdb/search/keyword?query=manali"` must return JSON. (Opening the URL in the address bar returns 403 on purpose: only your website's origin is allowed.)
-Free alternative: the Cloudflare Worker in `backend/` (same address format `<worker-url>/tmdb`).
-If your site address changes, edit `ALLOWED_ORIGINS` in `functions/proxy-core.js` and redeploy.
+Or double-click `start.bat` on Windows.
 
-## Test every Discovery tab (live site, signed in or not)
-1. Discover > search **Varanasi**. Overview shows the summary and an "Open in Google Maps" link.
-2. **Images**: photos load; click one: the viewer shows caption, photographer, licence and a Wikimedia Commons link. Arrows and Esc work.
-3. **Movies**: real posters, years, ratings, descriptions; a Documentaries section below; click **Details** for runtime, tagline and a trailer link. If you see "Movie service not connected", `tmdbProxy` is empty. "Could not load movies" means the URL or deployment is wrong (F12 > Network shows the failing request).
-4. **Stories**: history text and related Wikipedia articles with "Read on Wikipedia" links.
-5. **Places**: photos, distance, Popular / Lesser-known tag, Historic tag, **Google Maps** and **Add to Itinerary** buttons.
-6. **Culture**: culture/cuisine text plus festival, food, art, architecture and tradition articles with source links.
-7. Repeat with **Jaipur**, **Manali**, **Goa**: every tab must change with the destination.
+## Firebase setup
 
-## Upload to your existing GitHub repository (nothing is deleted)
-1. Back up first: on the repo page click **Code > Download ZIP**.
-2. Click **Add file > Upload files**. Drag in `index.html`, `style.css`, `script.js`, `firebase-config.js`, `firebase-init.js`, `firestore.rules`, `README.md`, and the `backend` folder.
-   Files with the same name are replaced; other files in the repo stay. Old versions remain in the history.
-3. Commit directly to `main`.
-4. Settings > Pages: Deploy from branch `main`, folder `/ (root)`. Wait 1-2 minutes, then hard refresh (Ctrl+Shift+R).
+1. Create / use project `journeyjar-b7f0b` (or change IDs in `firebase-config.js` and `.firebaserc`).
+2. Enable Authentication → Email/Password + Google.
+3. Add authorized domains (your GitHub Pages domain + localhost).
+4. Create Firestore database.
+5. Publish `firestore.rules`.
+6. Deploy proxy:
 
-## Known limitations
-- "Lesser-known" places are inferred from Wikipedia page views (last 30 days), not from a tourism database; there is no free API for true hidden gems.
-- TMDB links a film to a place by keyword or text, so a listing does not prove it was filmed there.
-- Travel Vault files stay in the browser (IndexedDB), not in the cloud, and are not encrypted.
-- Two devices editing at once: the last save wins.
+```bash
+cd functions
+npm install
+firebase functions:secrets:set TMDB_API_KEY
+firebase functions:secrets:set OTM_API_KEY
+cd ..
+firebase deploy --only functions
+```
+
+7. Copy the Function URL into `firebase-config.js`:
+
+```js
+tmdbProxy: "https://us-central1-YOUR_PROJECT.cloudfunctions.net/api/tmdb",
+otmProxy:  "https://us-central1-YOUR_PROJECT.cloudfunctions.net/api/otm",
+```
+
+Leave `tmdbKey` / `otmKey` empty in production.
+
+## GitHub Pages deploy
+
+1. Create a new repository.
+2. Upload all files from this folder.
+3. Settings → Pages → Deploy from branch `main` (root).
+4. Add the Pages domain to Firebase Auth → Authorized domains.
+5. After proxy is live, update `firebase-config.js` and push again.
+
+## API keys (free)
+
+- TMDB: https://www.themoviedb.org → Settings → API
+- OpenTripMap: https://opentripmap.org or https://dev.opentripmap.org
+

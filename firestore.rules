@@ -20,10 +20,26 @@ service cloud.firestore {
           && request.resource.data.q is string
           && request.resource.data.q.size() <= 100;
       }
+
+      // Travel Discovery favourites
+      match /favoritePlaces/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 120;
+      }
+
+      // Movie Discovery favourites
+      match /favoriteMovies/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.title is string
+          && request.resource.data.title.size() <= 160;
+      }
     }
 
     // ============================================================
-    //  TRIP SYNC – Collaborative rooms
+    //  TRIP SYNC – Collaborative rooms (UNCHANGED)
     // ============================================================
 
     function isMember(tripId) {
@@ -36,7 +52,6 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/trips/$(tripId)).data.ownerId == request.auth.uid;
     }
 
-    // ---- Invitation documents (safe public preview only) ----
     match /tripInvites/{code} {
       allow read: if request.auth != null;
 
@@ -54,7 +69,6 @@ service cloud.firestore {
         && resource.data.createdBy == request.auth.uid;
     }
 
-    // ---- Trip documents ----
     match /trips/{tripId} {
       allow read: if isMember(tripId);
 
@@ -102,10 +116,13 @@ service cloud.firestore {
         allow read: if isMember(tripId);
         allow create, update, delete: if isMember(tripId);
       }
-      match /activities/{docId} {
+      match /notes/{docId} {
         allow read: if isMember(tripId);
-        allow create: if isMember(tripId)
-          && request.resource.data.userId == request.auth.uid;
+        allow create, update, delete: if isMember(tripId);
+      }
+      match /chat/{docId} {
+        allow read: if isMember(tripId);
+        allow create: if isMember(tripId);
         allow update, delete: if false;
       }
     }

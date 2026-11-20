@@ -1,23 +1,26 @@
-# Node / Dependencies
+# Node
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Firebase
 .firebase/
-firebase-debug.log*
-firestore-debug.log*
-ui-debug.log*
+firebase-debug.log
+.runtimeconfig.json
 
-# Wrangler / Cloudflare
-.wrangler/
-
-# Environment / Secrets
-.env
-.env.local
-.env.*.local
-
-# OS Files
+# OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+
+# Local env / secrets  (never commit real keys to public repo)
+.env
+.env.local

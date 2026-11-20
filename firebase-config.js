@@ -13,16 +13,21 @@ export const firebaseConfig = {
 };
 
 // ============================================================
-//  TMDB (movies & documentaries in Discover)
-//  Option A — Backend proxy (recommended): set tmdbProxy to your Cloud Function /
-//             Cloudflare Worker URL ending in /tmdb (key stays on the server).
-//  Option B — Direct key (works on GitHub Pages): set tmdbKey below.
-//             WARNING: anyone can view this key in the browser / GitHub.
-//             Prefer a proxy for production.
+//  Discovery services (Travel + Movies)
+//  Prefer the secure backend proxy. Keys should NEVER be committed
+//  for production. Use Firebase Secrets or Cloudflare secrets.
 // ============================================================
 export const DISCOVER_CONFIG = {
+  // After deploying the Cloud Function, set these to:
+  //   "https://us-central1-journeyjar-b7f0b.cloudfunctions.net/api/tmdb"
+  //   "https://us-central1-journeyjar-b7f0b.cloudfunctions.net/api/otm"
   tmdbProxy: "",
+  otmProxy: "",
+
+  // Direct keys – ONLY for local testing. Remove or leave empty in production.
   tmdbKey: "74d8dd6381340fb36e054ddc8a3593d6",
+  otmKey: "",                         // Get free key at https://opentripmap.org / dev.opentripmap.org
+
   tmdbImg: "https://image.tmdb.org/t/p/w342",
   offlineGuide: false
 };
