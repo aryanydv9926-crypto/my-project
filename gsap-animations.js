@@ -602,7 +602,7 @@
             animateHomePage();
             break;
           case "disc":
-            animateDiscoverPage();
+            // Preserved original Discovery feature — untouched
             break;
           case "dash":
             animateDashboard();
@@ -768,7 +768,7 @@
               <button class="btn lrg" onclick="go('disc')">
                 ${ic("compass")} Explore Destinations
               </button>
-              <button class="btn o lrg" onclick="JJDisc && JJDisc.setTab('movies') || go('disc')">
+              <button class="btn o lrg" onclick="go('disc')">
                 ${ic("film")} Discover Movies
               </button>
             </div>

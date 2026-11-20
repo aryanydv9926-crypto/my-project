@@ -1,10 +1,10 @@
 {
   "name": "journeyjar-functions",
-  "private": true,
-  "main": "index.js",
+  "description": "Secure TMDB + OpenTripMap proxy",
   "engines": { "node": "20" },
+  "main": "index.js",
   "dependencies": {
-    "firebase-admin": "^12.6.0",
-    "firebase-functions": "^6.0.1"
+    "firebase-functions": "^5.0.0",
+    "firebase-admin": "^12.0.0"
   }
 }
